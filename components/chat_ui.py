@@ -1,15 +1,19 @@
 """
 VitalBite AI — Health AI Chat UI Component
 Conversational AI interface with session selector, personal profile context, clean message bubbles, and safety triage.
+Supports seamless Demo Mode reasoning when Gemini is not configured.
 """
 import streamlit as st
 from typing import Dict, Any, Optional
 from database.repositories import ProfileRepository, ChatRepository
 from services.ai_service import AIService, build_health_chat_prompt
+from services.auth_service import AuthService
 from services.safety_service import SafetyService
 from components.emergency_modal import render_emergency_banner
 
 def render_chat_tab(user_id: str):
+    is_demo = AuthService.is_demo_mode()
+
     st.html("""
     <div style="margin-bottom: 1.5rem;">
         <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em;">💬 Personal Health AI</h2>
@@ -17,17 +21,24 @@ def render_chat_tab(user_id: str):
     </div>
     """)
 
-    # Fast cached diagnostic status check (0 network calls on reruns)
+    # Check diagnostic status
     diag = AIService.get_detailed_diagnostics(force_refresh=False)
     status = diag.get("status", "CONFIG_MISSING")
 
-    if status != "READY":
+    if is_demo and status != "READY":
+        st.html("""
+        <div class="med-card" style="background: rgba(245, 243, 255, 0.9); border: 1px solid rgba(196, 181, 253, 0.8); padding: 0.85rem 1.15rem; margin-bottom: 1rem;">
+            <div style="font-weight: 800; color: #7E22CE; font-size: 0.92rem;">✨ Demo Health AI Active</div>
+            <div style="font-size: 0.82rem; color: #5B21B6; margin-top: 0.2rem;">
+                Exploring Health AI with evidence-based demonstration responses. In production, live Google Gemini reasoning is active when an API key is configured.
+            </div>
+        </div>
+        """)
+    elif not is_demo and status != "READY":
         if status in ["CONFIG_MISSING", "CONFIG_PLACEHOLDER"]:
             msg = "AI configuration is not set up yet. Please add your <code>GEMINI_API_KEY</code> to <code>.streamlit/secrets.toml</code> or environment variables."
         elif status == "AUTH_FAILED":
             msg = "VitalBite AI could not authenticate with the Gemini service. Please verify your API key permissions in Google AI Studio."
-        elif status in ["MODEL_DISCOVERY_FAILED", "MODEL_UNAVAILABLE"]:
-            msg = "No compatible Gemini model is currently available for this configuration."
         else:
             msg = "VitalBite AI is temporarily unable to reach the AI service. Please try again later."
 
@@ -40,7 +51,8 @@ def render_chat_tab(user_id: str):
         </div>
         """)
 
-    profile = ProfileRepository.get_profile(user_id)
+    profile = ProfileRepository.get_profile(user_id) or {}
+    user_name = profile.get("name") or ("Alex" if is_demo else "User")
 
     # Conversation Selector Card
     sessions = ChatRepository.list_sessions(user_id)
@@ -74,8 +86,8 @@ def render_chat_tab(user_id: str):
     # Initial Welcome message
     if not messages:
         welcome_text = (
-            "Hello! I am your VitalBite AI health assistant. "
-            "I can help explain health concepts, wellness topics, and offer general information based on your profile context. "
+            f"Hello {user_name}! I am your VitalBite AI health assistant. "
+            "I can help explain health concepts, workout strategies, and offer evidence-based guidance tailored to your profile. "
             "How can I assist you today?"
         )
         ChatRepository.add_message(user_id, selected_session_id, "assistant", welcome_text)
@@ -103,8 +115,8 @@ def render_chat_tab(user_id: str):
         if safety_eval["is_emergency"]:
             render_emergency_banner(safety_eval)
             emergency_reply = (
-                "🚨 **SAFETY ESCALATION**: Your query contains symptoms that may indicate a serious emergency. "
-                f"Please call **{safety_eval['primary_number']}** or seek immediate medical care now."
+                "🚨 **SAFETY ESCALATION**: Your query contains symptoms that may indicate a serious medical emergency. "
+                f"Please call **{safety_eval['primary_number']}** or seek immediate emergency medical care now."
             )
             with st.chat_message("assistant"):
                 st.markdown(emergency_reply)
@@ -113,7 +125,12 @@ def render_chat_tab(user_id: str):
             with st.chat_message("assistant"):
                 with st.spinner("VitalBite AI is reviewing health context..."):
                     prompt, sys_prompt = build_health_chat_prompt(user_input, profile)
-                    response_text = AIService.generate_response(prompt, sys_prompt)
+                    response_text = AIService.generate_response(
+                        prompt=prompt,
+                        system_instruction=sys_prompt,
+                        is_demo=is_demo,
+                        user_name=user_name
+                    )
                     
                     if response_text.startswith("SERVICE_UNAVAILABLE:"):
                         st.html(f"""
@@ -126,8 +143,7 @@ def render_chat_tab(user_id: str):
                         st.markdown(response_text)
                         st.html("""
                         <div style="font-size: 0.76rem; color: #64748B; margin-top: 0.5rem;">
-                            ⚠️ Informational response only. Not a medical diagnosis or prescription. Consult a healthcare professional for clinical concerns.
+                            ⚠️ VitalBite AI is in beta testing. Informational response only. Not a medical diagnosis or prescription.
                         </div>
                         """)
-                        # Save ONLY valid successful assistant responses
                         ChatRepository.add_message(user_id, selected_session_id, "assistant", response_text)

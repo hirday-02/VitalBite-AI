@@ -1,6 +1,7 @@
 """
 VitalBite AI — Main Streamlit Application Entrypoint & Page Router
-Personalized, multi-user, privacy-aware digital health & nutrition AI platform.
+Personalized, multi-user, privacy-aware digital health & nutrition AI platform,
+with production-safe Demo Mode and robust deployment resilience.
 """
 import streamlit as st
 
@@ -32,7 +33,7 @@ def main():
     # Inject Custom Light Theme & Frosted Glassmorphism CSS
     inject_custom_css()
 
-    # Check Authentication
+    # Check Authentication (Real user or Demo user)
     if not AuthService.is_authenticated():
         render_auth_page()
         return
@@ -42,10 +43,25 @@ def main():
         render_auth_page()
         return
 
+    is_demo = AuthService.is_demo_mode()
     profile = ProfileRepository.get_profile(user_id) or {}
-    user_name = profile.get("name") or "Alex Rivera"
+    user_name = profile.get("name") or ("Alex Rivera" if is_demo else "User")
 
-    # Top Application Header Bar matching Reference UI
+    # Unified Navigation State Initialization
+    if "nav_selection" not in st.session_state:
+        st.session_state["nav_selection"] = "Dashboard"
+
+    def set_nav_tab(tab_name: str):
+        st.session_state["nav_selection"] = tab_name
+        st.rerun()
+
+    # Top Application Header Bar
+    mode_chip = (
+        '<span style="background: rgba(147, 51, 234, 0.12); color: #7E22CE; border: 1px solid rgba(147, 51, 234, 0.3); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.76rem; font-weight: 800;">✨ DEMO MODE</span>'
+        if is_demo else
+        '<span class="vitalbite-chip-assistant">Healthcare SaaS</span>'
+    )
+
     st.html(f"""
     <div class="vitalbite-header-bar">
         <div class="vitalbite-logo-box">
@@ -56,7 +72,7 @@ def main():
         </div>
         <div class="vitalbite-chip-group">
             <span class="vitalbite-chip-beta">BETA</span>
-            <span class="vitalbite-chip-assistant">Healthcare SaaS</span>
+            {mode_chip}
             <div class="vitalbite-user-pill">
                 <span style="font-size: 0.95rem;">👤</span> {user_name}
             </div>
@@ -64,22 +80,16 @@ def main():
     </div>
     """)
 
-    # Unified Navigation Session State
-    if "nav_selection" not in st.session_state:
-        st.session_state["nav_selection"] = "Dashboard"
-
-    def set_nav_tab(tab_name: str):
-        st.session_state["nav_selection"] = tab_name
-        st.rerun()
-
     # Sidebar Navigation Menu
     with st.sidebar:
-        st.html("""
+        st.html(f"""
         <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.85rem; border-bottom: 1px solid rgba(186, 230, 253, 0.45); margin-bottom: 0.85rem;">
             <div class="vitalbite-emblem" style="width: 36px; height: 36px; font-size: 1.05rem;">VB</div>
             <div>
                 <div style="font-weight: 800; font-size: 1.15rem; color: #0F172A; letter-spacing: -0.02em;">VitalBite AI</div>
-                <div style="font-size: 0.72rem; color: #64748B; font-weight: 600;">Health & Nutrition SaaS</div>
+                <div style="font-size: 0.72rem; color: {'#7E22CE; font-weight: 700;' if is_demo else '#64748B; font-weight: 600;'}">
+                    {'✨ Interactive Demo Session' if is_demo else 'Personal Health & Nutrition'}
+                </div>
             </div>
         </div>
         """)
@@ -108,7 +118,7 @@ def main():
             "Settings": "⚙️"
         }
 
-        # Deterministic single-click navigation
+        # Deterministic single-click navigation radio
         st.radio(
             "Navigation Menu",
             options=nav_options,
@@ -118,12 +128,17 @@ def main():
         )
 
         st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
-        if st.button("🚪 Sign Out", use_container_width=True):
-            AuthService.sign_out()
-            st.rerun()
+        if is_demo:
+            if st.button("🚪 Exit Demo Mode", use_container_width=True, key="btn_sidebar_exit_demo"):
+                AuthService.exit_demo_mode()
+                st.rerun()
+        else:
+            if st.button("🚪 Sign Out", use_container_width=True, key="btn_sidebar_signout"):
+                AuthService.sign_out()
+                st.rerun()
 
     # Route Active Tab
-    active_tab = st.session_state["nav_selection"]
+    active_tab = st.session_state.get("nav_selection", "Dashboard")
 
     if active_tab == "Dashboard":
         render_dashboard(user_id, set_nav_tab)

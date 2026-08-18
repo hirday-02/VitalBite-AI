@@ -1,6 +1,7 @@
 """
 VitalBite AI — Automated Test Suite Runner (Standard Library)
-Runs unit tests for multi-user isolation, profile completeness, AI diagnostics, source-grounded nutrition, and emergency safety triage.
+Runs unit tests for multi-user isolation, profile completeness, AI diagnostics, source-grounded nutrition,
+emergency safety triage, and Demo Mode deployment resilience.
 """
 import sys
 import os
@@ -19,6 +20,7 @@ from tests.test_profile_completeness import (
 )
 from tests.test_ai_diagnostics import TestAIDiagnostics
 from tests.test_diet_planner import TestDietPlanner
+from tests.test_demo_mode import TestDemoMode
 from tests.test_nutrition import test_icmr_paneer_lookup, test_icmr_roti_lookup, test_unknown_food_lookup
 from tests.test_safety import test_chest_pain_emergency_trigger, test_stroke_symptoms_trigger, test_mild_symptom_no_emergency
 
@@ -75,6 +77,7 @@ def main():
     suite.addTests(loader.loadTestsFromTestCase(VitalBiteTestSuite))
     suite.addTests(loader.loadTestsFromTestCase(TestAIDiagnostics))
     suite.addTests(loader.loadTestsFromTestCase(TestDietPlanner))
+    suite.addTests(loader.loadTestsFromTestCase(TestDemoMode))
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     if not result.wasSuccessful():

@@ -1,13 +1,13 @@
 """
 VitalBite AI — Authentication UI Component
-Renders clean, frosted glassmorphic login, registration, and password reset matching the reference visual design.
+Renders clean, frosted glassmorphic login, registration, password reset, and one-click Demo Mode exploration.
 """
 import streamlit as st
 from services.auth_service import AuthService
 
 def render_auth_page():
     st.html("""
-    <div style="text-align: center; margin-top: 1rem; margin-bottom: 2rem;">
+    <div style="text-align: center; margin-top: 1rem; margin-bottom: 1.5rem;">
         <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 18px; background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%); font-weight: 800; font-size: 1.8rem; color: #FFFFFF; box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35); margin-bottom: 0.85rem;">
             VB
         </div>
@@ -23,7 +23,7 @@ def render_auth_page():
         st.html("""
         <div class="med-card" style="padding: 1.5rem 1.85rem; border-radius: 22px;">
             <div style="font-size: 1.15rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem;">Welcome to VitalBite AI</div>
-            <div style="font-size: 0.84rem; color: #64748B; margin-bottom: 1.25rem;">Sign in to access your personalized health command center.</div>
+            <div style="font-size: 0.84rem; color: #64748B; margin-bottom: 1.25rem;">Sign in to access your private health command center, or explore Demo Mode instantly.</div>
         """)
 
         tab_login, tab_signup, tab_reset = st.tabs(["🔒 Sign In", "📝 Create Account", "🔑 Reset Password"])
@@ -83,11 +83,29 @@ def render_auth_page():
                         else:
                             st.error(msg)
 
+        # Dedicated Demo Mode Entry Card (Prominent yet secondary)
+        st.markdown("<div style='margin-top: 1.5rem; border-top: 1px solid rgba(186, 230, 253, 0.6); padding-top: 1.25rem;'></div>", unsafe_allow_html=True)
+        st.html("""
+        <div style="text-align: center; margin-bottom: 0.65rem;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em;">OR EXPLORE WITHOUT SIGNING IN</span>
+        </div>
+        """)
+
+        if st.button("✨ Explore Demo", use_container_width=True, key="btn_explore_demo"):
+            AuthService.start_demo_mode()
+            st.rerun()
+
+        st.html("""
+        <div style="text-align: center; font-size: 0.78rem; color: #64748B; margin-top: 0.4rem; font-weight: 500;">
+            Demo Mode — Explore VitalBite AI with sample data. Demo data is temporary and not saved.
+        </div>
+        """)
+
         st.html("</div>")
 
     # Medical Disclaimer Notice
     st.html("""
-    <div class="disclaimer-box" style="max-width: 620px; margin: 1.75rem auto 0 auto; text-align: center;">
-        📌 <b>VitalBite AI is currently in beta.</b> Information provided is for general educational and informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment.
+    <div class="disclaimer-box" style="max-width: 620px; margin: 1.5rem auto 0 auto; text-align: center;">
+        📌 <b>VitalBite AI is currently in beta.</b> Information provided is for general educational and informational purposes only and is not a diagnosis, prescription, or substitute for professional medical advice.
     </div>
     """)

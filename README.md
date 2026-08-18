@@ -9,7 +9,9 @@
 
 **VitalBite AI** is a production-quality, multi-user health and nutrition web application designed to help individuals track their wellness, analyze symptoms safely, explore verified dietary data, and generate goal-aligned 7-day meal plans.
 
-The platform combines deterministic, source-grounded nutritional datasets (ICMR-NIN IFCT 2017 & USDA FoodData Central) with conversational AI reasoning and multi-layer medical emergency triage.
+The platform operates in two seamless modes:
+1. **Production Mode**: Full Supabase authentication, PostgreSQL Row Level Security (RLS) data isolation, and live Google Gemini AI reasoning.
+2. **Demo Mode**: Instant zero-credential exploration with realistic fictional sample data (*Alex Rivera*), session-contained in-memory storage, deterministic 7-day meal planning, and evidence-based fallback AI guidance without requiring database or API keys.
 
 ---
 
@@ -28,6 +30,7 @@ The platform combines deterministic, source-grounded nutritional datasets (ICMR-
 - 🕒 **Consultation & Health History**: Search and review previous chat sessions, symptom checks, and saved 7-day diet plans with one-click ReportLab PDF export.
 - 📄 **Document Center & Scanner**: Upload or paste lab report excerpts to receive plain-English AI explanations.
 - ⚙️ **Privacy & Account Controls**: Multi-user isolation via PostgreSQL Row Level Security (RLS), full JSON/CSV data backup exports, and a permanent account deletion Danger Zone.
+- ✨ **Production-Safe Demo Mode**: One-click exploration without requiring registration or external API credentials.
 
 ---
 
@@ -35,7 +38,7 @@ The platform combines deterministic, source-grounded nutritional datasets (ICMR-
 
 - **Frontend & App Framework**: [Streamlit](https://streamlit.io/) (with custom light frosted glassmorphism CSS)
 - **Backend & Database**: [Supabase](https://supabase.com/) (PostgreSQL with Row Level Security, Auth, and Storage)
-- **AI & Language Models**: [Google GenAI SDK](https://ai.google.dev/) (`google-genai` / Gemini 3.6 Flash) with cached diagnostics and 429 rate-limit backoff protection
+- **AI & Language Models**: [Google GenAI SDK](https://ai.google.dev/) (`google-genai` / Gemini 3.6 Flash) with cached diagnostics, 429 rate-limit backoff protection, and evidence-based demo fallbacks
 - **PDF Report Generation**: [ReportLab](https://www.reportlab.com/)
 - **Nutritional Datasets**: ICMR-NIN Indian Food Composition Tables (IFCT 2017) & USDA FoodData Central (FDC)
 - **Validation & Utilities**: Pydantic, Pandas, Python-Dotenv
@@ -57,7 +60,7 @@ VitalBite-AI/
 │   └── secrets.toml.example    # Streamlit secrets template
 │
 ├── components/                 # Reusable UI component modules
-│   ├── auth_ui.py              # Login, registration, password reset
+│   ├── auth_ui.py              # Login, registration, password reset, demo entry
 │   ├── dashboard_ui.py         # Personal health command center
 │   ├── profile_ui.py           # Demographics and profile management
 │   ├── chat_ui.py              # Health AI conversation tab
@@ -66,19 +69,21 @@ VitalBite-AI/
 │   ├── insights_ui.py          # BMI, BMR, TDEE health analytics
 │   ├── history_ui.py           # Consultation history & PDF export
 │   ├── documents_ui.py         # Document center & lab scanner
-│   ├── settings_ui.py          # Account, data backup, danger zone
+│   ├── settings_ui.py          # Account, data backup, danger zone, exit demo
 │   └── emergency_modal.py      # Indian 112 emergency overlay banner
 │
 ├── database/                   # Database layer
 │   ├── client.py               # Supabase client manager & mock fallback
-│   └── repositories.py         # Isolated DAOs (Profile, Chat, Symptom, Diet)
+│   ├── repositories.py         # Isolated DAOs (Profile, Chat, Symptom, Diet)
+│   └── schema.sql              # Supabase PostgreSQL schema with RLS policies
 │
 ├── datasets/                   # Verified food composition datasets
 │   └── icmr_nin_foods.json     # Verified ICMR-NIN & USDA nutritional records
 │
 ├── services/                   # Business logic and external API clients
 │   ├── ai_service.py           # Gemini AI client with 429 backoff & caching
-│   ├── auth_service.py         # Authentication and session handling
+│   ├── auth_service.py         # Authentication, demo sessions, and tokens
+│   ├── demo_service.py         # Fictional demo data & fallback intelligence
 │   ├── diet_planner_service.py # Deterministic 7-day meal optimization engine
 │   ├── health_service.py       # BMI, BMR, TDEE, profile completeness math
 │   ├── nutrition_service.py    # Database food lookup and substitution engine
@@ -91,9 +96,10 @@ VitalBite-AI/
 │   └── validation.py           # Input sanitization and validators
 │
 └── tests/                      # Automated test suite
-    ├── run_all_tests.py        # Master test runner (33 unit tests)
+    ├── run_all_tests.py        # Master test runner (40 unit tests)
     ├── test_ai_diagnostics.py  # AI diagnostic & placeholder tests
     ├── test_auth_isolation.py  # Supabase multi-user isolation tests
+    ├── test_demo_mode.py       # Demo mode & deployment resilience tests
     ├── test_diet_planner.py    # Diet planner & nutrition target tests
     ├── test_gemini_diagnostics.py # Live Gemini API integration tests
     ├── test_nutrition.py       # ICMR/USDA food lookup tests
@@ -125,13 +131,14 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment Variables
+### 4. Configure Environment Variables (Optional for Demo Mode)
 Copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml` (or `.env.example` to `.env`):
 ```toml
 GEMINI_API_KEY = "your_gemini_api_key_here"
 SUPABASE_URL = "https://your-project-id.supabase.co"
 SUPABASE_ANON_KEY = "your_supabase_anon_key_here"
 ```
+*(Note: You can skip this step and click **✨ Explore Demo** on the login page to run the application immediately without credentials!)*
 
 ### 5. Launch the Application
 ```bash
@@ -145,7 +152,7 @@ Open your browser at `http://localhost:8501`.
 
 To run the complete automated test suite:
 ```bash
-# Run all unit and integration tests
+# Run all unit and integration tests (40 tests)
 python tests/run_all_tests.py
 
 # Verify Python syntax and bytecode compilation
@@ -156,7 +163,8 @@ python -m compileall -f .
 
 ## Security & Privacy Architecture
 
-- **PostgreSQL Row Level Security (RLS)**: Every database record is strictly partitioned by `user_id`. User A can never query or mutate User B's records.
+- **PostgreSQL Row Level Security (RLS)**: In production mode, every database record is strictly partitioned by `user_id`. User A can never query or mutate User B's records.
+- **Zero Database Writes in Demo Mode**: Demo mode operates strictly in local session memory, ensuring zero demo data leaks into the production database.
 - **Zero Hardcoded Secrets**: All API credentials and service tokens are excluded from version control via `.gitignore`.
 - **Rate-Limit & RPM Protection**: Gemini model diagnostics are cached in memory (10-minute TTL) with exponential backoff on 429 responses, ensuring 1 user action produces at most 1 API request.
 

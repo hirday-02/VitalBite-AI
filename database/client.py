@@ -1,6 +1,7 @@
 """
 VitalBite AI — Database Client & Session Manager
 Handles Supabase client initialization, configuration checks, and optional mock database wrapper.
+Guarantees resilience on Streamlit Cloud when credentials are not yet configured.
 """
 import os
 import streamlit as st
@@ -52,10 +53,18 @@ class SupabaseManager:
     _use_mock: bool = False
 
     @classmethod
+    def has_valid_credentials(cls) -> bool:
+        """Returns True if valid non-placeholder Supabase credentials exist."""
+        if cls.is_mock_mode():
+            return True
+        url, key = get_supabase_credentials()
+        return bool(url and key and not is_placeholder_credential(url, key) and SUPABASE_AVAILABLE)
+
+    @classmethod
     def get_client(cls) -> Optional[Client]:
         """
         Initializes and returns the Supabase client.
-        Fails fast in production if credentials are missing and mock mode is not explicitly allowed.
+        Never throws unhandled exceptions when credentials are missing; returns None gracefully.
         """
         if cls._use_mock:
             return None
@@ -65,19 +74,14 @@ class SupabaseManager:
 
         # Handle explicit mock DB mode
         if is_mock_db_allowed():
-            print("[SupabaseManager] Running in EXPLICIT MOCK DB MODE for local testing.")
             cls._use_mock = True
             return None
 
         url, key = get_supabase_credentials()
 
-        # Handle missing or placeholder credentials in production mode
+        # Handle missing or placeholder credentials in production mode gracefully
         if not url or not key or is_placeholder_credential(url, key) or not SUPABASE_AVAILABLE:
-            raise RuntimeError(
-                "Supabase credentials (SUPABASE_URL, SUPABASE_ANON_KEY) are missing or incomplete.\n"
-                "Production mode requires a valid Supabase connection.\n"
-                "If you are developing locally, set VITALBITE_ALLOW_MOCK_DB=true in your .env or secrets.toml."
-            )
+            return None
 
         try:
             cls._instance = create_client(url, key)
@@ -85,21 +89,16 @@ class SupabaseManager:
             return cls._instance
         except Exception as e:
             print(f"[SupabaseManager] Failed to connect to Supabase: {e}")
-            raise RuntimeError(
-                f"Failed to initialize Supabase client: {e}.\n"
-                "Mock DB mode is NOT enabled. Please check SUPABASE_URL and SUPABASE_ANON_KEY."
-            )
+            return None
 
     @classmethod
     def is_mock_mode(cls) -> bool:
         """Returns True if the application is running in explicit mock DB mode."""
         if cls._use_mock:
             return True
-        if cls._instance is None:
-            try:
-                cls.get_client()
-            except RuntimeError:
-                pass
+        if cls._instance is None and is_mock_db_allowed():
+            cls._use_mock = True
+            return True
         return cls._use_mock
 
 # Global in-memory mock store for local dev when VITALBITE_ALLOW_MOCK_DB=true

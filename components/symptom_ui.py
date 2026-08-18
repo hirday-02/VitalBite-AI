@@ -1,13 +1,18 @@
 """
 VitalBite AI — Symptom Assessment UI Component
-Guided medical questionnaire with emergency 112 triage escalation and structured analysis.
+Guided medical questionnaire with emergency 112 triage escalation, structured analysis,
+and resilient Demo Mode fallback evaluations.
 """
 import streamlit as st
 from database.repositories import ProfileRepository, SymptomRepository
 from services.ai_service import AIService, build_symptom_assessment_prompt
+from services.auth_service import AuthService
 from services.safety_service import SafetyService
+from services.demo_service import get_fallback_symptom_assessment
 
 def render_symptom_tab(user_id: str):
+    is_demo = AuthService.is_demo_mode()
+
     st.html("""
     <div style="margin-bottom: 1.5rem;">
         <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em;">⚡ Guided Symptom Assessment</h2>
@@ -15,7 +20,8 @@ def render_symptom_tab(user_id: str):
     </div>
     """)
 
-    profile = ProfileRepository.get_profile(user_id)
+    profile = ProfileRepository.get_profile(user_id) or {}
+    user_name = profile.get("name") or ("Alex" if is_demo else "User")
 
     with st.form("symptom_form"):
         st.html("<h4 style='color: #0284C7; font-weight: 800; font-size: 1.05rem; margin-bottom: 0.5rem;'>Describe Your Current Symptoms</h4>")
@@ -35,7 +41,7 @@ def render_symptom_tab(user_id: str):
             severity_str = st.select_slider(
                 "Severity Rating",
                 options=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
-                value="4",
+                value="3" if is_demo else "4",
                 label_visibility="collapsed"
             )
 
@@ -68,12 +74,21 @@ def render_symptom_tab(user_id: str):
             </div>
             """)
 
-        # 2. AI Assessment Generation (Single call)
+        # 2. AI Assessment Generation
         with st.spinner("VitalBite AI is reviewing health context against evidence guidelines..."):
             prompt, sys_prompt = build_symptom_assessment_prompt(symptoms_text, duration_str, severity_str, profile)
-            analysis_result = AIService.generate_response(prompt, sys_prompt)
+            analysis_result = AIService.generate_response(
+                prompt=prompt,
+                system_instruction=sys_prompt,
+                is_demo=is_demo,
+                user_name=user_name
+            )
 
-        # Save to database repository
+            # If Gemini service returned unavailable and we're in demo mode, use the structured fallback
+            if analysis_result.startswith("SERVICE_UNAVAILABLE:") and is_demo:
+                analysis_result = get_fallback_symptom_assessment(symptoms_text, duration_str, severity_str)
+
+        # Save to database repository (session-scoped if in demo mode)
         SymptomRepository.save_assessment(
             user_id=user_id,
             symptoms=symptoms_text,
@@ -97,6 +112,6 @@ def render_symptom_tab(user_id: str):
 
         st.html("""
         <div class="disclaimer-box">
-            ⚠️ <b>Important Notice:</b> This assessment is for educational purposes only and cannot diagnose a medical condition. If symptoms worsen, persist, or cause concern, please consult a qualified healthcare professional.
+            ⚠️ <b>Important Notice:</b> VitalBite AI is currently in beta testing. This assessment is for educational purposes only and cannot diagnose a medical condition. If symptoms worsen, persist, or cause concern, please consult a qualified healthcare professional.
         </div>
         """)
