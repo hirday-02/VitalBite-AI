@@ -1,0 +1,139 @@
+"""
+VitalBite AI — PDF Report Generation Service
+Generates downloadable, nicely formatted PDF reports using ReportLab.
+Includes mandatory Beta indicators and medical safety disclaimers.
+"""
+import io
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional
+
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+
+class ReportService:
+    @staticmethod
+    def generate_pdf_report(
+        title: str,
+        report_type: str,
+        content_text: str,
+        user_name: str = "User",
+        profile: Optional[Dict[str, Any]] = None
+    ) -> bytes:
+        """
+        Generates a downloadable PDF report as raw bytes.
+        """
+        buffer = io.BytesIO()
+
+        if not REPORTLAB_AVAILABLE:
+            # Simple text fallback if ReportLab is missing
+            fallback_text = f"VITALBITE AI — BETA REPORT\n{title}\n\nUser: {user_name}\nDate: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n{content_text}\n\nDISCLAIMER: Educational purpose only."
+            return fallback_text.encode("utf-8")
+
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            rightMargin=36,
+            leftMargin=36,
+            topMargin=36,
+            bottomMargin=36
+        )
+
+        styles = getSampleStyleSheet()
+
+        # Custom paragraph styles
+        header_style = ParagraphStyle(
+            'ReportHeader',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=20,
+            leading=24,
+            textColor=colors.HexColor('#1E3A8A')
+        )
+
+        subtitle_style = ParagraphStyle(
+            'ReportSubtitle',
+            parent=styles['Normal'],
+            fontName='Helvetica-Oblique',
+            fontSize=10,
+            leading=12,
+            textColor=colors.HexColor('#0D9488')
+        )
+
+        body_style = ParagraphStyle(
+            'ReportBody',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=10,
+            leading=14,
+            textColor=colors.HexColor('#1E293B')
+        )
+
+        disclaimer_style = ParagraphStyle(
+            'ReportDisclaimer',
+            parent=styles['Normal'],
+            fontName='Helvetica-Oblique',
+            fontSize=8,
+            leading=10,
+            textColor=colors.HexColor('#64748B')
+        )
+
+        story = []
+
+        # 1. Header Banner
+        story.append(Paragraph("VitalBite AI — Beta", subtitle_style))
+        story.append(Spacer(1, 4))
+        story.append(Paragraph(title, header_style))
+        story.append(Spacer(1, 10))
+        story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#1E3A8A'), spaceAfter=15))
+
+        # 2. Metadata Table
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        meta_data = [
+            [Paragraph(f"<b>Patient Name:</b> {user_name}", body_style), Paragraph(f"<b>Date:</b> {now_str}", body_style)],
+            [Paragraph(f"<b>Report Type:</b> {report_type.capitalize()}", body_style), Paragraph("<b>Status:</b> Beta Informational Summary", body_style)]
+        ]
+        meta_table = Table(meta_data, colWidths=[270, 270])
+        meta_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
+            ('PADDING', (0, 0), (-1, -1), 8),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
+        ]))
+        story.append(meta_table)
+        story.append(Spacer(1, 15))
+
+        # 3. Main Content
+        lines = content_text.split("\n")
+        for line in lines:
+            line_clean = line.strip()
+            if not line_clean:
+                story.append(Spacer(1, 6))
+            elif line_clean.startswith("## "):
+                section_title = line_clean.replace("## ", "").replace("**", "")
+                sec_style = ParagraphStyle('SecTitle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=12, leading=16, textColor=colors.HexColor('#0D9488'))
+                story.append(Paragraph(section_title, sec_style))
+                story.append(Spacer(1, 4))
+            else:
+                formatted_line = line_clean.replace("**", "<b>").replace("**", "</b>")
+                story.append(Paragraph(formatted_line, body_style))
+                story.append(Spacer(1, 4))
+
+        # 4. Footer Disclaimer
+        story.append(Spacer(1, 20))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CBD5E1'), spaceAfter=10))
+        disclaimer_text = (
+            "<b>IMPORTANT MEDICAL DISCLAIMER:</b> Generated by VitalBite AI — Beta. "
+            "This report is for general educational and personal reference purposes only and does NOT constitute an official hospital medical record, clinical diagnostic report, or prescription. "
+            "Always consult a licensed healthcare professional for medical diagnosis and treatment decisions."
+        )
+        story.append(Paragraph(disclaimer_text, disclaimer_style))
+
+        doc.build(story)
+        buffer.seek(0)
+        return buffer.getvalue()

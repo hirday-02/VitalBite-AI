@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# Environment & Secrets (NEVER COMMIT SECRETS)
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+!.streamlit/secrets.toml.example
+secrets.toml
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary uploads, logs & reports
+scratch/
+temp_reports/
+*.pdf
+*.csv
+*.log
+
+# Database local caches
+*.sqlite3
+*.db
+
+# IDE / Editor / System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
