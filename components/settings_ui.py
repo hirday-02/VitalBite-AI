@@ -8,13 +8,20 @@ import pandas as pd
 import streamlit as st
 from database.repositories import ProfileRepository, ChatRepository, SymptomRepository, DietRepository, AccountRepository
 from services.auth_service import AuthService
+from utils.icons import get_svg_icon
 
 def render_settings_tab(user_id: str):
     is_demo = AuthService.is_demo_mode()
+    settings_svg = get_svg_icon("settings", color="#0284C7", size=22)
+    lock_svg = get_svg_icon("lock", color="#0284C7", size=18)
+    alert_svg = get_svg_icon("alert", color="#DC2626", size=16)
+    sparkle_svg = get_svg_icon("sparkles", color="#7E22CE", size=16)
 
-    st.html("""
+    st.html(f"""
     <div style="margin-bottom: 1.5rem;">
-        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em;">⚙️ Settings & Privacy Controls</h2>
+        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em; display: flex; align-items: center; gap: 0.5rem;">
+            {settings_svg} Settings & Privacy Controls
+        </h2>
         <p style="color: #475569; font-size: 0.95rem; margin: 0; font-weight: 500;">Manage your account details, privacy controls, data export, and session settings.</p>
     </div>
     """)
@@ -23,19 +30,21 @@ def render_settings_tab(user_id: str):
     profile = ProfileRepository.get_profile(user_id) or {}
 
     s_tab1, s_tab2, s_tab3, s_tab4 = st.tabs([
-        "👤 Account",
-        "🔒 Privacy & AI",
-        "📦 Data Export",
-        "🚪 Session & Actions" if is_demo else "⚠️ Danger Zone"
+        "Account",
+        "Privacy & AI",
+        "Data Export",
+        "Session & Actions" if is_demo else "Danger Zone"
     ])
 
     # 1. ACCOUNT DETAILS
     with s_tab1:
         st.html("<h3 style='color: #0F172A; font-size: 1.15rem; font-weight: 800; margin-bottom: 0.75rem;'>Account Overview</h3>")
         if is_demo:
-            st.html("""
+            st.html(f"""
             <div class="med-card" style="border-left: 4px solid #7E22CE;">
-                <div style="font-weight: 800; color: #7E22CE; font-size: 1.05rem;">✨ Demo Mode Active</div>
+                <div style="font-weight: 800; color: #7E22CE; font-size: 1.05rem; display: flex; align-items: center; gap: 0.4rem;">
+                    {sparkle_svg} Demo Mode Active
+                </div>
                 <div style="font-size: 0.88rem; color: #475569; margin-top: 0.35rem; line-height: 1.5;">
                     You are currently exploring VitalBite AI in <b>Demo Mode</b> using sample data.
                     No personal data is collected or saved to the production database.
@@ -49,19 +58,19 @@ def render_settings_tab(user_id: str):
 
         st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
         if is_demo:
-            if st.button("🚪 Exit Demo Mode", use_container_width=True, key="btn_settings_exit_demo_top"):
+            if st.button("Exit Demo Mode", use_container_width=True, key="btn_settings_exit_demo_top"):
                 AuthService.exit_demo_mode()
                 st.rerun()
         else:
-            if st.button("🚪 Sign Out", use_container_width=True, key="btn_settings_signout"):
+            if st.button("Sign Out", use_container_width=True, key="btn_settings_signout"):
                 AuthService.sign_out()
                 st.rerun()
 
     # 2. PRIVACY & AI CONTROLS
     with s_tab2:
-        st.html("""
+        st.html(f"""
         <div class="med-card">
-            <div class="med-card-title">🔒 Data Privacy & Security Architecture</div>
+            <div class="med-card-title">{lock_svg} Data Privacy & Security Architecture</div>
             <ul style="color: #475569; font-size: 0.9rem; line-height: 1.6; padding-left: 1.2rem;">
                 <li><b style="color: #0F172A;">PostgreSQL Row Level Security (RLS):</b> In production mode, all your health profiles, chats, symptom checks, and diet plans are strictly isolated by <code>user_id</code>. User A can never access User B's records.</li>
                 <li><b style="color: #0F172A;">Demo Mode Isolation:</b> Demo records exist strictly in local session memory. Zero demo interactions are written to Supabase.</li>
@@ -91,7 +100,7 @@ def render_settings_tab(user_id: str):
 
         json_bytes = json.dumps(export_obj, indent=2).encode("utf-8")
         st.download_button(
-            "📥 Download Complete Data Backup (JSON)",
+            "Download Complete Data Backup (JSON)",
             data=json_bytes,
             file_name="vitalbite_demo_data_export.json" if is_demo else "vitalbite_my_data_export.json",
             mime="application/json",
@@ -103,7 +112,7 @@ def render_settings_tab(user_id: str):
             csv_bytes = df_sym.to_csv(index=False).encode("utf-8")
             st.markdown("<div style='margin-top: 0.75rem;'></div>", unsafe_allow_html=True)
             st.download_button(
-                "📊 Export Symptom Assessments (CSV)",
+                "Export Symptom Assessments (CSV)",
                 data=csv_bytes,
                 file_name="vitalbite_symptoms.csv",
                 mime="text/csv",
@@ -113,24 +122,24 @@ def render_settings_tab(user_id: str):
     # 4. DANGER ZONE / SESSION EXIT
     with s_tab4:
         if is_demo:
-            st.html("""
+            st.html(f"""
             <div class="med-card" style="border-left: 4px solid #0284C7;">
-                <div style="font-size: 1.15rem; font-weight: 800; color: #0284C7; margin-bottom: 0.35rem;">
-                    ✨ Demo Session Management
+                <div style="font-size: 1.15rem; font-weight: 800; color: #0284C7; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+                    {sparkle_svg} Demo Session Management
                 </div>
                 <div style="font-size: 0.9rem; color: #475569; line-height: 1.5; margin-bottom: 1rem;">
                     Demo Mode is temporary. Any edits made to the demo profile or generated diet plans will be cleared when you exit.
                 </div>
             </div>
             """)
-            if st.button("🚪 Exit Demo Mode & Return to Sign In", use_container_width=True, key="btn_settings_exit_demo_bottom"):
+            if st.button("Exit Demo Mode & Return to Sign In", use_container_width=True, key="btn_settings_exit_demo_bottom"):
                 AuthService.exit_demo_mode()
                 st.rerun()
         else:
-            st.html("""
+            st.html(f"""
             <div class="emergency-overlay" style="border-color: #EF4444; background: rgba(254, 242, 242, 0.95);">
-                <div style="font-size: 1.15rem; font-weight: 800; color: #DC2626; margin-bottom: 0.4rem;">
-                    ⚠️ Permanent Account Deletion
+                <div style="font-size: 1.15rem; font-weight: 800; color: #DC2626; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;">
+                    {alert_svg} Permanent Account Deletion
                 </div>
                 <div style="font-size: 0.9rem; color: #991B1B; line-height: 1.5; margin-bottom: 0.85rem;">
                     Deleting your account will permanently erase your profile, all consultation threads, symptom records, diet plans, and associated metrics from the database. This action is <b>irreversible</b>.
@@ -139,7 +148,7 @@ def render_settings_tab(user_id: str):
             """)
 
             confirm_text = st.text_input("Type 'DELETE MY ACCOUNT' to confirm:", placeholder="DELETE MY ACCOUNT")
-            delete_button = st.button("🔴 Permanently Delete Account", use_container_width=True)
+            delete_button = st.button("Permanently Delete Account", use_container_width=True)
 
             if delete_button:
                 if confirm_text.strip() != "DELETE MY ACCOUNT":

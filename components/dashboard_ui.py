@@ -1,7 +1,6 @@
 """
 VitalBite AI — Dashboard UI Component
-Personal Health Command Center with profile summary, SVG metric gauges, recent activity,
-and quick action cards matching Reference Screen 2.
+Personal Health Command Center with profile summary, SVG metric gauges, recent activity, and quick actions.
 """
 import streamlit as st
 from typing import Dict, Any, Optional
@@ -9,6 +8,7 @@ from database.repositories import ProfileRepository, ChatRepository, SymptomRepo
 from services.health_service import HealthService
 from services.auth_service import AuthService
 from utils.custom_css import render_bmi_gauge_html, render_completeness_donut_html
+from utils.icons import get_svg_icon
 
 def render_dashboard(user_id: str, set_nav_callback):
     is_demo = AuthService.is_demo_mode()
@@ -16,20 +16,29 @@ def render_dashboard(user_id: str, set_nav_callback):
     profile = ProfileRepository.get_profile(user_id) or {}
     name = profile.get("name") or user_info.get("user_metadata", {}).get("full_name") or ("Alex Rivera" if is_demo else "User")
 
+    sparkle_svg = get_svg_icon("sparkles", color="#7E22CE", size=16)
+    profile_svg = get_svg_icon("profile", color="#0284C7", size=18)
+    chat_svg = get_svg_icon("chat", color="#0284C7", size=18)
+    symptom_svg = get_svg_icon("symptom", color="#0D9488", size=18)
+    nutrition_svg = get_svg_icon("nutrition", color="#059669", size=18)
+    doc_svg = get_svg_icon("documents", color="#0284C7", size=18)
+
     # 1. Main Greeting Banner
     st.html(f"""
     <div style="margin-bottom: 1.25rem;">
-        <h2 style="color: #0F172A; font-size: 1.95rem; font-weight: 800; margin-bottom: 0.25rem; letter-spacing: -0.025em;">Welcome back, {name} 👋</h2>
+        <h2 style="color: #0F172A; font-size: 1.95rem; font-weight: 800; margin-bottom: 0.25rem; letter-spacing: -0.025em;">Welcome back, {name}</h2>
         <p style="color: #475569; font-size: 0.95rem; margin: 0; font-weight: 500;">Here's your personalized health & wellness overview.</p>
     </div>
     """)
 
     if is_demo:
-        st.html("""
-        <div class="med-card" style="background: rgba(245, 243, 255, 0.92); border: 1px solid rgba(196, 181, 253, 0.8); padding: 0.85rem 1.25rem; margin-bottom: 1.25rem;">
+        st.html(f"""
+        <div class="med-card" style="background: rgba(245, 243, 255, 0.95); border: 1px solid rgba(196, 181, 253, 0.8); padding: 0.85rem 1.25rem; margin-bottom: 1.25rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <div>
-                    <span style="font-weight: 800; color: #7E22CE; font-size: 0.92rem;">✨ Demo Mode Active:</span>
+                    <span style="font-weight: 800; color: #7E22CE; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                        {sparkle_svg} Demo Mode Active:
+                    </span>
                     <span style="font-size: 0.86rem; color: #5B21B6; margin-left: 0.35rem;">
                         Pre-populated with fictional sample records (Alex Rivera, 28y, Recomposition). Test diet planning, symptom checking, or health insights freely!
                     </span>
@@ -64,7 +73,6 @@ def render_dashboard(user_id: str, set_nav_callback):
                         <div style="font-size: 1.6rem; font-weight: 800; color: #64748B;">--</div>
                         <div style="font-size: 0.82rem; color: #64748B;">Enter height & weight in Profile</div>
                     </div>
-                    <div style="font-size: 2rem; opacity: 0.35;">⚖️</div>
                 </div>
             </div>
             """)
@@ -95,7 +103,6 @@ def render_dashboard(user_id: str, set_nav_callback):
                     <div style="font-size: 2.1rem; font-weight: 800; color: #0284C7; line-height: 1.1; letter-spacing: -0.02em;">{total_actions}</div>
                     <div style="font-size: 0.84rem; color: #475569; font-weight: 600; margin-top: 0.25rem;">Chats, Symptoms & Diets</div>
                 </div>
-                <div style="font-size: 1.6rem; display: flex; gap: 0.35rem;">💬🩺🥗</div>
             </div>
         </div>
         """)
@@ -105,22 +112,22 @@ def render_dashboard(user_id: str, set_nav_callback):
 
     act_col1, act_col2, act_col3, act_col4 = st.columns(4)
     with act_col1:
-        if st.button("💬 Ask Health AI\n\nAI health assistant", use_container_width=True, key="qa_chat"):
+        if st.button("Ask Health AI\n\nAI health assistant", use_container_width=True, key="qa_chat"):
             set_nav_callback("Health AI")
     with act_col2:
-        if st.button("⚡ Check Symptoms\n\nGuided triage", use_container_width=True, key="qa_symptom"):
+        if st.button("Check Symptoms\n\nGuided triage", use_container_width=True, key="qa_symptom"):
             set_nav_callback("Symptoms")
     with act_col3:
-        if st.button("🥗 Build Diet Plan\n\n7-day meal plan", use_container_width=True, key="qa_diet"):
+        if st.button("Build Diet Plan\n\n7-day meal plan", use_container_width=True, key="qa_diet"):
             set_nav_callback("Nutrition")
     with act_col4:
-        if st.button("📄 Scan Report\n\nDocument interpreter", use_container_width=True, key="qa_doc"):
+        if st.button("Scan Report\n\nDocument interpreter", use_container_width=True, key="qa_doc"):
             set_nav_callback("Documents")
 
     # 4. Structured Health Profile Overview Card
     st.html(f"""
     <div class="med-card" style="margin-top: 1.25rem;">
-        <div class="med-card-title">👤 Health Profile Overview</div>
+        <div class="med-card-title">{profile_svg} Health Profile Overview</div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.1rem; margin-top: 0.65rem;">
             <div>
                 <div style="font-size: 0.76rem; color: #64748B; font-weight: 700; text-transform: uppercase;">Age</div>
@@ -160,7 +167,9 @@ def render_dashboard(user_id: str, set_nav_callback):
             st.html(f"""
             <div class="med-card" style="padding: 0.95rem 1.25rem; margin-bottom: 0.65rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: 700; color: #0284C7; font-size: 0.92rem;">⚡ Symptom Check: {latest_s.get('symptoms', '')[:45]}...</span>
+                    <span style="font-weight: 700; color: #0284C7; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                        {symptom_svg} Symptom Check: {latest_s.get('symptoms', '')[:45]}...
+                    </span>
                     <span style="font-size: 0.8rem; color: #64748B; font-weight: 500;">{latest_s.get('created_at', '')[:10]}</span>
                 </div>
             </div>
@@ -171,7 +180,9 @@ def render_dashboard(user_id: str, set_nav_callback):
             st.html(f"""
             <div class="med-card" style="padding: 0.95rem 1.25rem; margin-bottom: 0.65rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: 700; color: #059669; font-size: 0.92rem;">🥗 Diet Plan: {latest_p.get('goal', '')} ({latest_p.get('diet_type', '')})</span>
+                    <span style="font-weight: 700; color: #059669; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                        {nutrition_svg} Diet Plan: {latest_p.get('goal', '')} ({latest_p.get('diet_type', '')})
+                    </span>
                     <span style="font-size: 0.8rem; color: #64748B; font-weight: 500;">{latest_p.get('created_at', '')[:10]}</span>
                 </div>
             </div>
@@ -180,6 +191,6 @@ def render_dashboard(user_id: str, set_nav_callback):
     # 6. Persistent Medical Disclaimer Notice
     st.html("""
     <div class="disclaimer-box">
-        📌 <b>Medical Disclaimer:</b> VitalBite AI is an early beta health assistant designed for general educational purposes only. It is not a licensed physician, medical diagnostic tool, or substitute for professional healthcare evaluation.
+        <b>Medical Disclaimer:</b> VitalBite AI is an early beta health assistant designed for general educational purposes only. It is not a licensed physician, medical diagnostic tool, or substitute for professional healthcare evaluation.
     </div>
     """)

@@ -1,7 +1,8 @@
 """
 VitalBite AI — Automated Test Suite Runner (Standard Library)
 Runs unit tests for multi-user isolation, profile completeness, AI diagnostics, source-grounded nutrition,
-emergency safety triage, and Demo Mode deployment resilience.
+emergency safety triage, emoji removal compliance, Demo Mode deployment resilience,
+AI response identity isolation, and Supabase configuration diagnostics.
 """
 import sys
 import os
@@ -21,8 +22,11 @@ from tests.test_profile_completeness import (
 from tests.test_ai_diagnostics import TestAIDiagnostics
 from tests.test_diet_planner import TestDietPlanner
 from tests.test_demo_mode import TestDemoMode
+from tests.test_emoji_audit import TestEmojiAudit
 from tests.test_nutrition import test_icmr_paneer_lookup, test_icmr_roti_lookup, test_unknown_food_lookup
 from tests.test_safety import test_chest_pain_emergency_trigger, test_stroke_symptoms_trigger, test_mild_symptom_no_emergency
+from tests.test_ai_responses import TestAIResponses
+from tests.test_supabase_config import TestSupabaseConfig
 
 class VitalBiteTestSuite(unittest.TestCase):
     def test_01_profile_isolation(self):
@@ -78,6 +82,9 @@ def main():
     suite.addTests(loader.loadTestsFromTestCase(TestAIDiagnostics))
     suite.addTests(loader.loadTestsFromTestCase(TestDietPlanner))
     suite.addTests(loader.loadTestsFromTestCase(TestDemoMode))
+    suite.addTests(loader.loadTestsFromTestCase(TestEmojiAudit))
+    suite.addTests(loader.loadTestsFromTestCase(TestAIResponses))
+    suite.addTests(loader.loadTestsFromTestCase(TestSupabaseConfig))
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     if not result.wasSuccessful():

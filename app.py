@@ -8,12 +8,12 @@ import streamlit as st
 # 1. Page Configuration (Must be the first Streamlit command)
 st.set_page_config(
     page_title="VitalBite AI — Health & Nutrition Platform",
-    page_icon="🩺",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 from utils.custom_css import inject_custom_css
+from utils.icons import get_svg_icon
 from services.auth_service import AuthService
 from database.repositories import ProfileRepository
 
@@ -30,7 +30,7 @@ from components.documents_ui import render_documents_tab
 from components.settings_ui import render_settings_tab
 
 def main():
-    # Inject Custom Light Theme & Frosted Glassmorphism CSS
+    # Inject Custom Light Theme & Clean CSS
     inject_custom_css()
 
     # Check Authentication (Real user or Demo user)
@@ -56,8 +56,11 @@ def main():
         st.rerun()
 
     # Top Application Header Bar
+    sparkle_svg = get_svg_icon("sparkles", color="#7E22CE", size=14)
+    user_svg = get_svg_icon("profile", color="#0284C7", size=16)
+
     mode_chip = (
-        '<span style="background: rgba(147, 51, 234, 0.12); color: #7E22CE; border: 1px solid rgba(147, 51, 234, 0.3); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.76rem; font-weight: 800;">✨ DEMO MODE</span>'
+        f'<span style="background: rgba(147, 51, 234, 0.1); color: #7E22CE; border: 1px solid rgba(147, 51, 234, 0.25); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.76rem; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem;">{sparkle_svg} DEMO MODE</span>'
         if is_demo else
         '<span class="vitalbite-chip-assistant">Healthcare SaaS</span>'
     )
@@ -74,7 +77,7 @@ def main():
             <span class="vitalbite-chip-beta">BETA</span>
             {mode_chip}
             <div class="vitalbite-user-pill">
-                <span style="font-size: 0.95rem;">👤</span> {user_name}
+                {user_svg} {user_name}
             </div>
         </div>
     </div>
@@ -83,12 +86,12 @@ def main():
     # Sidebar Navigation Menu
     with st.sidebar:
         st.html(f"""
-        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.85rem; border-bottom: 1px solid rgba(186, 230, 253, 0.45); margin-bottom: 0.85rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.85rem; border-bottom: 1px solid rgba(226, 232, 240, 0.8); margin-bottom: 0.85rem;">
             <div class="vitalbite-emblem" style="width: 36px; height: 36px; font-size: 1.05rem;">VB</div>
             <div>
                 <div style="font-weight: 800; font-size: 1.15rem; color: #0F172A; letter-spacing: -0.02em;">VitalBite AI</div>
                 <div style="font-size: 0.72rem; color: {'#7E22CE; font-weight: 700;' if is_demo else '#64748B; font-weight: 600;'}">
-                    {'✨ Interactive Demo Session' if is_demo else 'Personal Health & Nutrition'}
+                    {'Interactive Demo Session' if is_demo else 'Personal Health & Nutrition'}
                 </div>
             </div>
         </div>
@@ -106,34 +109,20 @@ def main():
             "Settings"
         ]
 
-        icons = {
-            "Dashboard": "📊",
-            "Profile": "👤",
-            "Health AI": "💬",
-            "Symptoms": "⚡",
-            "Nutrition": "🥗",
-            "Insights": "📈",
-            "History": "🕒",
-            "Documents": "📄",
-            "Settings": "⚙️"
-        }
-
-        # Deterministic single-click navigation radio
         st.radio(
             "Navigation Menu",
             options=nav_options,
-            format_func=lambda x: f"{icons.get(x, '')} {x}",
             key="nav_selection",
             label_visibility="collapsed"
         )
 
         st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
         if is_demo:
-            if st.button("🚪 Exit Demo Mode", use_container_width=True, key="btn_sidebar_exit_demo"):
+            if st.button("Exit Demo Mode", use_container_width=True, key="btn_sidebar_exit_demo"):
                 AuthService.exit_demo_mode()
                 st.rerun()
         else:
-            if st.button("🚪 Sign Out", use_container_width=True, key="btn_sidebar_signout"):
+            if st.button("Sign Out", use_container_width=True, key="btn_sidebar_signout"):
                 AuthService.sign_out()
                 st.rerun()
 
@@ -159,9 +148,9 @@ def main():
     elif active_tab == "Settings":
         render_settings_tab(user_id)
 
-    # Clean, Unobtrusive Footer Medical Disclaimer
+    # Clean Footer Medical Disclaimer
     st.html("""
-    <div style="margin-top: 2.5rem; text-align: center; border-top: 1px solid rgba(186, 230, 253, 0.45); padding-top: 1.25rem; color: #64748B; font-size: 0.78rem; line-height: 1.5;">
+    <div style="margin-top: 2.5rem; text-align: center; border-top: 1px solid rgba(226, 232, 240, 0.8); padding-top: 1.25rem; color: #64748B; font-size: 0.78rem; line-height: 1.5;">
         <b>VitalBite AI — Beta</b> | Educational & Informational Health Guidance | Not a Medical Prescription or Clinical Diagnostic Tool<br>
         For acute medical emergencies in India, immediately dial <b>112</b> or contact your local hospital emergency room.
     </div>

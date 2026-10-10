@@ -11,8 +11,8 @@ def get_default_demo_profile() -> Dict[str, Any]:
     """Returns a realistic, strictly fictional demonstration health profile."""
     return {
         "id": DEMO_USER_ID,
-        "name": "Alex Rivera",
-        "age": 28,
+        "name": "Harsh Singh",
+        "age": 22,
         "gender": "Male",
         "height_cm": 182,
         "weight_kg": 74.5,
@@ -72,7 +72,7 @@ def get_default_demo_chat_messages() -> Dict[str, List[Dict[str, Any]]]:
 4. **Rest & Recovery**: Muscle protein synthesis occurs during rest. Prioritize 7–9 hours of quality sleep.
 5. **Hydration**: Drink 2.5–3.5 liters of water daily to support metabolic function and workout stamina.
 
-⚠️ *VitalBite AI is currently in beta testing. Information provided is for general educational and informational purposes only and is not a diagnosis, prescription, or substitute for professional medical advice.*""",
+*VitalBite AI is currently in beta testing. Information provided is for general educational and informational purposes only and is not a diagnosis, prescription, or substitute for professional medical advice.*""",
                 "created_at": "2026-08-16T14:31:00Z"
             }
         ],
@@ -98,96 +98,139 @@ def get_default_demo_chat_messages() -> Dict[str, List[Dict[str, Any]]]:
 
 *Aim for a consistent sleep schedule and minimize blue light exposure 60 minutes before bed.*
 
-⚠️ *VitalBite AI is currently in beta testing. Educational guidance only.*""",
+*VitalBite AI is currently in beta testing. Educational guidance on sleep hygiene and recovery.*""",
                 "created_at": "2026-08-17T09:16:00Z"
             }
         ]
     }
 
 def get_default_demo_symptom_assessments() -> List[Dict[str, Any]]:
-    """Returns sample symptom assessments for demonstration."""
+    """Returns sample symptom check history for demonstration."""
     return [
         {
             "id": "demo_sym_1",
             "user_id": DEMO_USER_ID,
-            "symptoms": "Mild tension headache across forehead and slight neck stiffness after long screen time.",
-            "duration": "2 days",
+            "symptoms": "Mild tension headache after 8 hours of computer work and low water intake",
+            "duration": "4 hours",
             "severity": "3",
-            "is_emergency": False,
-            "created_at": "2026-08-17T11:20:00Z",
             "analysis": """## **Possible Considerations** (Educational Only)
-- **Tension-Type Headache**: Common, non-throbbing bilateral ache often linked to posture, eye strain, or stress.
-- **Digital Eye Strain**: Prolonged screen exposure without visual breaks can cause frontal head discomfort.
-- **Cervicogenic Strain**: Poor ergonomics or prolonged neck flexion while working.
+- **Tension Headache**: Commonly triggered by prolonged screen time, eye strain, neck posture, or mild dehydration.
+- **Dehydration**: Inadequate fluid intake can reduce blood volume and trigger cranial muscle tension.
 
 ## **Safe Self-Care & Monitoring**
-- Practice the 20-20-20 rule (every 20 minutes, look at an object 20 feet away for 20 seconds).
-- Maintain steady hydration (at least 2.5L water daily).
-- Perform gentle neck and upper trapezius stretches.
-- Ensure proper screen height at eye level.
+- Drink 500–750ml of room temperature water immediately.
+- Take a 15-minute break from digital screens. Apply a cool compress to the forehead.
+- Practice gentle neck stretches and shoulder rolls.
 
 ## **When to Seek Professional Medical Care**
-- Sudden onset "thunderclap" severe headache.
-- Accompanying high fever, rash, confusion, or visual disturbances.
-- Headache following head trauma or worsening progressively.
+- Sudden "thunderclap" severe headache intensity.
+- Headache accompanied by fever, stiff neck, confusion, vision changes, or numbness.
 
 ## **Important Disclaimer**
-⚠️ VitalBite AI is an educational assistant and cannot provide a medical diagnosis. Please discuss persistent or worsening symptoms with a qualified healthcare professional."""
+VitalBite AI is an educational assistant and cannot provide a medical diagnosis. Consult a healthcare provider if headaches persist.""",
+            "is_emergency": False,
+            "created_at": "2026-08-15T16:00:00Z"
         }
     ]
 
 def get_default_demo_diet_plans() -> List[Dict[str, Any]]:
-    """Returns sample saved diet plan for demonstration."""
+    """Returns sample diet plan history for demonstration."""
     return [
         {
-            "id": "demo_plan_1",
+            "id": "demo_diet_1",
             "user_id": DEMO_USER_ID,
             "goal": "Body Recomposition",
             "diet_type": "Vegetarian",
-            "created_at": "2026-08-16T15:00:00Z",
-            "plan_text": "Goal: Body Recomposition (Vegetarian)\nDaily Calories: ~2,150 kcal | Protein: ~135g\nStructured 5-meal schedule with verified ICMR-NIN & USDA food staples (Paneer, Roti, Dal, Oats, Whey Isolate, Curd, Almonds)."
+            "plan_text": """Goal: Body Recomposition (Vegetarian)
+Target Daily Intake: ~2350 kcal | Protein: ~140g | Carbs: ~260g | Fat: ~65g
+
+Optimized Daily Schedule:
+- Breakfast: Oats with Toned Milk, Almonds & Banana (450 kcal, 18g P)
+- Mid-Morning: Whey Protein Isolate Scoop in Water (120 kcal, 24g P)
+- Lunch: Paneer Sabzi, 2 Whole Wheat Rotis, Yellow Dal & Cucumber Salad (720 kcal, 42g P)
+- Evening Snack: Roasted Chana & Green Tea (210 kcal, 11g P)
+- Dinner: Soya Chunk Curry, Brown Rice & Mixed Vegetable Salad (650 kcal, 45g P)
+
+Nutritional Data Source: Verified ICMR-NIN IFCT 2017 & USDA Food Composition Tables.""",
+            "created_at": "2026-08-17T12:00:00Z"
         }
     ]
 
-def get_fallback_ai_response(prompt: str, user_name: str = "Alex") -> str:
+def get_fallback_ai_response(
+    prompt: str,
+    user_name: str = "User",
+    is_demo: bool = True,
+    profile: Optional[Dict[str, Any]] = None
+) -> str:
     """
     Provides intelligent, evidence-based health guidance when Gemini API is unavailable.
-    Guarantees zero crashes and 100% compliance with beta disclaimers.
+    Never assumes hardcoded user identity ('Alex Rivera') unless verified in user profile.
+    Uses deterministic calculations when complete profile parameters are available.
     """
     p_lower = prompt.lower()
 
-    if any(w in p_lower for w in ["gym", "workout", "muscle", "strength", "progress", "exercise", "lift", "training"]):
-        return f"""### 🏋️ Training & Nutrition Strategy for {user_name}
+    # Clean display name
+    clean_name = user_name if user_name and user_name != "Alex" else "there"
+    if is_demo and (not user_name or user_name == "User"):
+        clean_name = "there"
 
-Here are the evidence-based principles for fitness progress and body recomposition:
+    if any(w in p_lower for w in ["gym", "workout", "muscle", "strength", "progress", "exercise", "lift", "training", "diet", "meal plan", "meal", "weekly plan", "7-day", "7 day", "menu", "plan for", "protein", "calorie", "nutrition", "eat", "food", "carb", "fat", "supplement", "macro"]):
+        # Check if profile has sufficient metrics for deterministic calculation
+        has_metrics = bool(profile and profile.get("age") and profile.get("height_cm") and profile.get("weight_kg"))
 
-1. **Consistent Resistance Training**:
-   - Focus on compound multi-joint movements (squats, deadlifts, presses, rows).
-   - Apply Progressive Overload (gradually increasing load, volume, or execution quality).
-2. **Nutritional Foundation**:
-   - Consume adequate daily protein (~1.6 to 2.0g per kg body weight).
-   - Distribute protein across 3–5 balanced meals containing whole grains, vegetables, and quality fats.
-3. **Recovery & Sleep**:
-   - Target 7–9 hours of continuous sleep to support muscle protein synthesis and hormonal balance.
-4. **Hydration**:
-   - Drink 2.5 to 3.5 liters of water daily.
+        if has_metrics:
+            from services.diet_planner_service import DietPlannerService
+            goal = profile.get("fitness_goal") or "General Fitness"
+            targets = DietPlannerService.calculate_nutrition_targets(
+                profile=profile,
+                fitness_goal=goal,
+                activity_level=profile.get("activity_level", "moderate")
+            )
+            return f"""### Gym & Goal-Aligned Nutrition Strategy
 
-⚠️ *VitalBite AI is currently in beta testing. Information provided is for general educational and informational purposes only and is not a diagnosis, prescription, or substitute for professional medical advice. Please consult a qualified healthcare professional or certified trainer before beginning new exercise programs.*"""
+Welcome! Starting a gym routine is an excellent step toward strength, metabolic resilience, and body composition.
 
-    elif any(w in p_lower for w in ["diet", "food", "protein", "calorie", "nutrition", "eat", "meal", "carb", "fat"]):
-        return f"""### 🥗 Evidence-Based Nutrition Insights
+#### Verified Target Estimates (Based on Saved Profile)
+- **Primary Goal**: {goal}
+- **Basal Metabolic Rate (BMR)**: ~{targets['bmr']} kcal/day
+- **Total Daily Energy Expenditure (TDEE)**: ~{targets['tdee']} kcal/day
+- **Target Calories**: ~{targets['target_calories']} kcal/day
+- **Protein Target**: ~{targets['protein_g']}g/day (1.6–2.0g/kg body weight)
+- **Carbohydrates / Fats**: ~{targets['carbs_g']}g carbs / ~{targets['fat_g']}g fat
 
-Balanced nutrition supports energy, recovery, and long-term metabolic health:
+#### Key Beginner Principles
+1. **Progressive Overload**: Focus on multi-joint compound movements (squats, deadlifts, presses, rows). Gradually increase load or improve form over time.
+2. **Protein Distribution**: Spread your protein across 3–4 balanced meals using verified whole foods (Paneer, Tofu, Legumes, Eggs, or Lean Poultry).
+3. **Rest & Recovery**: Aim for 7–9 hours of sleep nightly to support muscle protein synthesis.
 
-- **Protein Distribution**: Incorporate high-quality protein sources (Paneer, Tofu, Legumes, Greek Yogurt, Whey, Eggs, or Lean Poultry) with each meal.
-- **Complex Carbohydrates**: Prioritize whole grains, oats, brown rice, and millets for sustained glycogen replenishment and dietary fiber.
-- **Essential Fats**: Include nuts, seeds, olive oil, and avocado to support endocrine and cardiovascular function.
-- **Micronutrient Density**: Fill half your plate with colorful vegetables and leafy greens for essential vitamins and minerals.
+#### Interactive 7-Day Meal Plan
+For a complete, day-by-day 7-day meal plan with exact food portioning and allergen exclusions, head over to the **7-Day Diet Planner** tab in VitalBite AI!
 
-⚠️ *VitalBite AI is currently in beta testing. Educational guidance only. Consult a registered dietitian for tailored medical nutrition therapy.*"""
+*VitalBite AI is in beta testing. Information provided is for general educational and informational purposes only.*"""
+        else:
+            return f"""### Gym & Fitness Nutrition Guidance
+
+Starting a gym routine is a fantastic decision for long-term health, strength, and energy!
+
+#### Core Beginner Pillars
+1. **Progressive Resistance Training**: Start with 3–4 days of compound exercises (squats, rows, chest presses). Focus on proper form before adding heavy weights.
+2. **Protein Optimization**: Aim for roughly 1.6 to 2.0g of protein per kg of body weight to support muscle recovery.
+3. **Calorie Balance & Hydration**: Align your caloric intake with your primary goal and drink 2.5–3.5L of water daily.
+4. **Recovery & Sleep**: Prioritize 7–9 hours of quality sleep to support muscle protein synthesis.
+
+#### Help Us Personalize Your Exact Targets
+To calculate your specific daily calorie, protein, carbohydrate, and fat numbers deterministically, could you share:
+1. **Primary Goal**: Muscle Gain, Fat Loss, or Body Recomposition?
+2. **Demographics**: Your current age, height, and weight (or save them in your **Health Profile** tab).
+3. **Dietary Preference**: Vegetarian, Vegan, Non-Vegetarian, or specific food allergies?
+
+#### Ready for a Complete 7-Day Meal Plan?
+Once your profile is set, navigate to the **7-Day Diet Planner** tab to generate a custom 7-day meal plan using verified ICMR-NIN & USDA nutritional records.
+
+*VitalBite AI is in beta testing. Information provided is for general educational purposes only.*"""
 
     elif any(w in p_lower for w in ["sleep", "stress", "tired", "energy", "fatigue", "recovery"]):
-        return f"""### 🌙 Rest, Sleep & Recovery Optimization
+        return f"""### Rest, Sleep & Recovery Optimization
 
 Optimizing rest is foundational for immune resilience, mental clarity, and physical recovery:
 
@@ -196,20 +239,20 @@ Optimizing rest is foundational for immune resilience, mental clarity, and physi
 - **Caffeine Curfew**: Limit caffeine consumption at least 8 hours before sleeping.
 - **Active Relaxation**: Incorporate 10–15 minutes of light stretching or breathwork to down-regulate the nervous system.
 
-⚠️ *VitalBite AI is currently in beta testing. If persistent fatigue or sleep issues continue, please consult a physician.*"""
+*VitalBite AI is currently in beta testing. If persistent fatigue or sleep issues continue, please consult a physician.*"""
 
     else:
-        return f"""### 💡 Health & Wellness Guidance
+        return f"""### Health & Wellness Guidance
 
-Thank you for your question, {user_name}!
+Thank you for your inquiry, {clean_name}!
 
 When managing everyday health and wellness, consider the following evidence-based foundations:
 1. **Balanced Nutrition**: Prioritize whole, minimally processed foods, adequate dietary protein, and colorful vegetables.
 2. **Regular Movement**: Aim for at least 150 minutes of moderate aerobic activity or 3–4 strength sessions weekly.
 3. **Rest & Recovery**: Ensure 7–9 hours of sleep nightly and manage lifestyle stressors.
-4. **Hydration & Consistency**: Maintain steady daily hydration and monitor how your body responds to routine changes.
+4. **Hydration & Consistency**: Maintain steady daily hydration (2.5–3.5L daily) and monitor how your body responds.
 
-⚠️ *VitalBite AI is currently in beta testing. Information provided is for general educational and informational purposes only and is not a diagnosis, prescription, or substitute for professional medical advice. Please consult a qualified healthcare professional for medical concerns.*"""
+*VitalBite AI is currently in beta testing. Information provided is for general educational and informational purposes only. Please consult a qualified healthcare professional for medical concerns.*"""
 
 def get_fallback_symptom_assessment(symptoms: str, duration: str, severity: str) -> str:
     """Generates structured, safe symptom assessment when Gemini is offline."""
@@ -227,4 +270,4 @@ def get_fallback_symptom_assessment(symptoms: str, duration: str, severity: str)
 - Appearance of red-flag symptoms such as high persistent fever, severe pain, breathing difficulty, or chest discomfort.
 
 ## **Important Disclaimer**
-⚠️ VitalBite AI is currently in beta testing. This information is for educational and informational purposes only and is not a diagnosis, prescription, or substitute for professional medical care. Consult a qualified healthcare professional for medical evaluation."""
+VitalBite AI is currently in beta testing. This information is for educational and informational purposes only and is not a diagnosis, prescription, or substitute for professional medical care. Consult a qualified healthcare professional for medical evaluation."""

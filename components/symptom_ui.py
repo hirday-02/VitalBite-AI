@@ -9,13 +9,19 @@ from services.ai_service import AIService, build_symptom_assessment_prompt
 from services.auth_service import AuthService
 from services.safety_service import SafetyService
 from services.demo_service import get_fallback_symptom_assessment
+from utils.icons import get_svg_icon
 
 def render_symptom_tab(user_id: str):
     is_demo = AuthService.is_demo_mode()
+    symptom_svg = get_svg_icon("symptom", color="#0D9488", size=22)
+    emergency_svg = get_svg_icon("emergency", color="#DC2626", size=20)
+    alert_svg = get_svg_icon("alert", color="#DC2626", size=16)
 
-    st.html("""
+    st.html(f"""
     <div style="margin-bottom: 1.5rem;">
-        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em;">⚡ Guided Symptom Assessment</h2>
+        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em; display: flex; align-items: center; gap: 0.5rem;">
+            {symptom_svg} Guided Symptom Assessment
+        </h2>
         <p style="color: #475569; font-size: 0.95rem; margin: 0; font-weight: 500;">Describe what you are experiencing to receive structured health information and safe triage guidance.</p>
     </div>
     """)
@@ -46,7 +52,7 @@ def render_symptom_tab(user_id: str):
             )
 
         st.markdown("<div style='margin-top: 0.85rem;'></div>", unsafe_allow_html=True)
-        submit_symptoms = st.form_submit_button("🩺 Run Guided Assessment", use_container_width=True)
+        submit_symptoms = st.form_submit_button("Run Guided Assessment", use_container_width=True)
 
     if submit_symptoms:
         if not symptoms_text.strip():
@@ -61,15 +67,15 @@ def render_symptom_tab(user_id: str):
             # UNMISTAKABLE EMERGENCY OVERRIDE
             st.html(f"""
             <div class="emergency-overlay">
-                <div style="font-size: 1.3rem; font-weight: 800; color: #DC2626; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
-                    🚨 EMERGENCY ALERT — URGENT MEDICAL EVALUATION REQUIRED
+                <div style="font-size: 1.25rem; font-weight: 800; color: #DC2626; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
+                    {emergency_svg} EMERGENCY ALERT — URGENT MEDICAL EVALUATION REQUIRED
                 </div>
                 <div style="font-size: 0.95rem; color: #991B1B; line-height: 1.5; margin-bottom: 1rem; font-weight: 500;">
                     Your reported symptoms (or high severity rating) indicate potential emergency warning signs.<br>
                     <b>Do NOT wait or rely solely on AI guidance for severe symptoms.</b>
                 </div>
                 <a href="tel:{safety_eval.get('primary_number', '112')}" class="emergency-btn">
-                    📞 CALL {safety_eval.get('primary_number', '112')} IMMEDIATELY
+                    CALL {safety_eval.get('primary_number', '112')} IMMEDIATELY
                 </a>
             </div>
             """)
@@ -98,12 +104,12 @@ def render_symptom_tab(user_id: str):
             is_emergency=safety_eval["is_emergency"] or is_high_severity
         )
 
-        st.html("<h3 style='color: #0284C7; font-weight: 800; margin-top: 1.5rem; margin-bottom: 0.75rem;'>📋 Informational Assessment Results</h3>")
+        st.html("<h3 style='color: #0284C7; font-weight: 800; margin-top: 1.5rem; margin-bottom: 0.75rem;'>Informational Assessment Results</h3>")
         
         if analysis_result.startswith("SERVICE_UNAVAILABLE:"):
             st.html(f"""
             <div class="error-card">
-                <div class="error-card-title">⚠️ AI Service Notice</div>
+                <div class="error-card-title">{alert_svg} AI Service Notice</div>
                 <div style="font-size: 0.88rem;">{analysis_result.replace("SERVICE_UNAVAILABLE:", "").strip()}</div>
             </div>
             """)
@@ -112,6 +118,6 @@ def render_symptom_tab(user_id: str):
 
         st.html("""
         <div class="disclaimer-box">
-            ⚠️ <b>Important Notice:</b> VitalBite AI is currently in beta testing. This assessment is for educational purposes only and cannot diagnose a medical condition. If symptoms worsen, persist, or cause concern, please consult a qualified healthcare professional.
+            <b>Important Notice:</b> VitalBite AI is currently in beta testing. This assessment is for educational purposes only and cannot diagnose a medical condition. If symptoms worsen, persist, or cause concern, please consult a qualified healthcare professional.
         </div>
         """)

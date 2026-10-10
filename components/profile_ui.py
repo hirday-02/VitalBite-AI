@@ -7,11 +7,16 @@ from database.repositories import ProfileRepository
 from services.health_service import HealthService
 from utils.validation import validate_age, validate_height, validate_weight
 from utils.custom_css import render_completeness_donut_html
+from utils.icons import get_svg_icon
 
 def render_profile_tab(user_id: str):
-    st.html("""
+    profile_svg = get_svg_icon("profile", color="#0284C7", size=22)
+
+    st.html(f"""
     <div style="margin-bottom: 1.5rem;">
-        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em;">👤 Personal Health Profile</h2>
+        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em; display: flex; align-items: center; gap: 0.5rem;">
+            {profile_svg} Personal Health Profile
+        </h2>
         <p style="color: #475569; font-size: 0.95rem; margin: 0; font-weight: 500;">Maintain your core health details so VitalBite AI can provide accurate, personalized guidance.</p>
     </div>
     """)
@@ -78,7 +83,7 @@ def render_profile_tab(user_id: str):
             medications = st.text_input("Current Medications (Type 'None' if zero)", value=existing.get("medications", ""))
 
         st.markdown("<div style='margin-top: 1.15rem;'></div>", unsafe_allow_html=True)
-        save_btn = st.form_submit_button("💾 Save Profile Details", use_container_width=True)
+        save_btn = st.form_submit_button("Save Profile Details", use_container_width=True)
 
     if save_btn:
         valid_age, age_val, age_err = validate_age(age_input)

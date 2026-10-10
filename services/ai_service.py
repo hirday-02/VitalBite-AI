@@ -81,6 +81,20 @@ def get_gemini_api_key() -> str:
 
     return ""
 
+
+def extract_user_inquiry(prompt: str) -> str:
+    """Extract only the user's actual question from the full health prompt."""
+    marker = "USER INQUIRY:"
+    if marker not in prompt:
+        return prompt.strip()
+
+    inquiry = prompt.split(marker, 1)[1]
+    ending = "Please provide a helpful, directly relevant response"
+    if ending in inquiry:
+        inquiry = inquiry.split(ending, 1)[0]
+
+    return inquiry.strip()
+
 class AIService:
     _configured: bool = False
     _client: Any = None
@@ -169,11 +183,13 @@ class AIService:
                 if discovered:
                     diag["model_discovery"] = "PASS"
                     preferred_priority = [
+                        "gemini-2.5-flash",
+                        "gemini-2.0-flash",
+                        "gemini-1.5-flash",
                         "gemini-3.6-flash",
                         "gemini-3.5-flash",
                         "gemini-3.5-flash-lite",
                         "gemini-3.1-flash-lite",
-                        "gemini-3-flash-preview",
                         "gemini-flash-lite-latest"
                     ]
                     
@@ -214,7 +230,7 @@ class AIService:
             elif "429" in err_str or "quota" in err_str or "rate" in err_str or "resource_exhausted" in err_str:
                 diag["status"] = "READY"
                 diag["safe_message"] = "Gemini API key active (rate-limit backoff active)."
-                diag["selected_model"] = "gemini-3.6-flash"
+                diag["selected_model"] = "gemini-2.5-flash"
             else:
                 diag["status"] = "API_REQUEST_FAILED"
                 diag["safe_message"] = "Unable to connect to Google Gemini endpoint due to network/API error."
@@ -254,8 +270,8 @@ class AIService:
                 legacy_genai.configure(api_key=api_key)
                 cls._client = legacy_genai
 
-            cls._available_models = diag.get("available_models", ["gemini-3.6-flash"])
-            cls._selected_model = diag.get("selected_model", "gemini-3.6-flash")
+            cls._available_models = diag.get("available_models", ["gemini-2.5-flash"])
+            cls._selected_model = diag.get("selected_model", "gemini-2.5-flash")
             cls._configured = True
             return True
         except Exception:
@@ -267,7 +283,8 @@ class AIService:
         prompt: str,
         system_instruction: Optional[str] = None,
         is_demo: bool = False,
-        user_name: str = "Alex"
+        user_name: str = "User",
+        profile: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Generates response from Google Gemini with single-request discipline and 429 exponential backoff.
@@ -275,7 +292,7 @@ class AIService:
         """
         # If Gemini is configured, attempt live call first
         if cls.initialize():
-            model_name = cls._selected_model or "gemini-3.6-flash"
+            model_name = cls._selected_model or "gemini-2.5-flash"
             for attempt in range(2):
                 try:
                     if GENAI_SDK_TYPE == "google-genai":
@@ -314,19 +331,34 @@ class AIService:
                         continue
                     elif "429" in err_str or "quota" in err_str or "resource_exhausted" in err_str:
                         if is_demo:
-                            return get_fallback_ai_response(prompt, user_name)
+                            return get_fallback_ai_response(
+    prompt=extract_user_inquiry(prompt),
+    user_name=user_name,
+    is_demo=is_demo,
+    profile=profile
+)
                         return (
                             "SERVICE_UNAVAILABLE: Google Gemini rate limit (5 RPM) reached. "
                             "Please wait 10–15 seconds before sending your next inquiry."
                         )
                     else:
                         if is_demo:
-                            return get_fallback_ai_response(prompt, user_name)
+                            return get_fallback_ai_response(
+    prompt=extract_user_inquiry(prompt),
+    user_name=user_name,
+    is_demo=is_demo,
+    profile=profile
+)
                         return f"SERVICE_UNAVAILABLE: VitalBite AI encountered an error: {str(e)[:120]}"
 
         # If live service is offline or in Demo Mode, provide rich evidence-based fallback
         if is_demo:
-            return get_fallback_ai_response(prompt, user_name)
+            return get_fallback_ai_response(
+    prompt=extract_user_inquiry(prompt),
+    user_name=user_name,
+    is_demo=is_demo,
+    profile=profile
+)
 
         # For unconfigured non-demo users, return clear setup message
         diag = cls.get_detailed_diagnostics(force_refresh=False)
@@ -341,33 +373,72 @@ class AIService:
 HEALTH_ASSISTANT_SYSTEM_PROMPT = """
 You are VitalBite AI, a calm, empathetic, intelligent digital health information assistant.
 
-CORE RULES:
-1. NON-DIAGNOSTIC BOUNDARY: You are an informational assistant, NOT a medical doctor, hospital, or diagnostic device. Never provide definitive clinical diagnoses.
-2. SAFETY FIRST: Prioritize medical safety. Highlight red flags that require professional care.
-3. EMPATHY & CLARITY: Use warm, encouraging, non-judgmental language. Avoid medical jargon.
-4. MEDICAL DISCLAIMER: Always remind users that information is for general educational purposes and important health decisions should be evaluated by a licensed healthcare professional.
-5. NO HALLUCINATION: Never invent medication dosages, medical studies, or clinical facts.
-6. NUTRITION BOUNDARY: Numerical nutrition data (calories, protein, carbs, fat, fiber) in VitalBite AI is computed deterministically from verified ICMR-NIN & USDA datasets. Provide explanations and lifestyle context, but do not invent arbitrary numbers.
+CORE DIRECTIVES:
+1. IDENTITY & CONTEXT SAFETY:
+   - Never assume the user's name is "Alex Rivera" unless that exact name is present in their verified saved profile.
+   - In Demo Mode, explicitly recognize that profile data is fictional demonstration data. Do NOT address a user as Alex Rivera if they are a distinct authenticated user.
+
+2. GOAL IDENTIFICATION & PROGRESSIVE QUESTIONING:
+   - When a user asks for a diet or nutrition recommendation (e.g., "I want to start gym. What diet should I take?"):
+     a) Identify their primary fitness goal (e.g., Muscle Gain, Fat Loss, Body Recomposition, or General Fitness).
+     b) Inspect their saved profile context to see what details are already provided vs what is missing.
+     c) If key parameters (fitness goal, age, height, weight, dietary preference, food allergies) are missing from their profile, ask 2–3 concise follow-up questions progressively. DO NOT re-ask for information that is already provided in their verified profile!
+     d) Immediately provide a helpful initial response explaining general beginner principles (adequate protein intake, calorie balance, hydration, sleep) while clearly distinguishing general principles from personalized targets.
+
+3. NUMERICAL & NUTRITIONAL ACCURACY:
+   - Generate specific numerical calorie and macronutrient targets ONLY when reliable inputs (age, height, weight, activity, goal) are available. Do NOT fabricate arbitrary numbers out of thin air.
+   - Ground all food recommendations in verified datasets (ICMR-NIN & USDA). State explicitly if a food or nutritional value cannot be verified.
+
+4. MEAL PLAN INTEGRATION:
+   - When the user asks for a complete meal plan or weekly diet layout, direct them to use the built-in deterministic 7-Day Diet Planner tab in VitalBite AI rather than generating free-form unverified meal plan lists in chat.
+
+5. MEDICAL SAFETY & NON-DIAGNOSTIC BOUNDARY:
+   - You are an informational assistant, NOT a medical doctor, hospital, or diagnostic device. Never provide definitive clinical diagnoses.
+   - Do not recommend unsafe calorie restriction (<1200 kcal/day for women, <1400 kcal/day for men), unnecessary high-dose supplements, or medication changes.
+   - Highlight red flags requiring professional medical evaluation.
+
+6. EMPATHY & CLARITY:
+   - Use warm, encouraging language. Use clear Markdown headings and bullet points. Avoid unnecessarily long generic lectures.
 """
 
-def build_health_chat_prompt(user_message: str, profile: Optional[Dict[str, Any]] = None) -> tuple[str, str]:
-    profile_summary = ""
+def build_health_chat_prompt(
+    user_message: str,
+    profile: Optional[Dict[str, Any]] = None,
+    is_demo: bool = False
+) -> tuple[str, str]:
+    if is_demo:
+        header = "USER HEALTH CONTEXT (Demo Mode - Fictional Profile):"
+    else:
+        header = "VERIFIED USER HEALTH CONTEXT:"
+
     if profile:
         profile_summary = f"""
-USER HEALTH CONTEXT:
-- Name: {profile.get('name', 'Not specified')}
-- Age: {profile.get('age', 'Not specified')}
-- Gender: {profile.get('gender', 'Not specified')}
-- Allergies: {profile.get('allergies', 'None')}
-- Conditions: {profile.get('conditions', 'None')}
-- Current Medications: {profile.get('medications', 'None')}
+{header}
+- Name: {profile.get('name') or 'Not specified'}
+- Age: {profile.get('age') or 'Not specified'}
+- Gender: {profile.get('gender') or 'Not specified'}
+- Height (cm): {profile.get('height_cm') or 'Not specified'}
+- Weight (kg): {profile.get('weight_kg') or 'Not specified'}
+- Fitness Goal: {profile.get('fitness_goal') or 'Not specified'}
+- Dietary Preference: {profile.get('dietary_preference') or 'Not specified'}
+- Food Allergies: {profile.get('allergies') or 'None'}
+- Chronic Conditions: {profile.get('conditions') or 'None'}
+- Current Medications: {profile.get('medications') or 'None'}
+- Activity Level: {profile.get('activity_level') or 'Not specified'}
 """
+    else:
+        profile_summary = f"""
+{header}
+- Saved profile: No verified profile available yet.
+"""
+
     prompt = f"""
 {profile_summary}
+
 USER INQUIRY:
 {user_message}
 
-Please provide a helpful, empathetic response. Address their question directly, offer general evidence-based guidance, highlight any warning signs, and encourage consulting a healthcare provider if appropriate.
+Please provide a helpful, directly relevant response following your core system directives.
 """
     return prompt, HEALTH_ASSISTANT_SYSTEM_PROMPT
 
@@ -405,7 +476,7 @@ Format with clear Markdown headings:
 [Guidance on consulting a primary care doctor, specialist, or urgent care if symptoms persist.]
 
 ## **Important Disclaimer**
-⚠️ VitalBite AI is currently in beta testing. This information is for educational/informational purposes and is not a diagnosis or a substitute for professional medical care. Consult a qualified healthcare professional.
+VitalBite AI is currently in beta testing. This information is for educational/informational purposes and is not a diagnosis or a substitute for professional medical care. Consult a qualified healthcare professional.
 """
     return prompt, HEALTH_ASSISTANT_SYSTEM_PROMPT
 

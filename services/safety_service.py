@@ -39,7 +39,7 @@ class SafetyService:
             "triggers": matched_triggers,
             "primary_number": "112",
             "country": "India",
-            "guidance_title": "🚨 POSSIBLE MEDICAL EMERGENCY DETECTED",
+            "guidance_title": "POSSIBLE MEDICAL EMERGENCY DETECTED",
             "message": (
                 "Your description contains symptoms that may require immediate emergency medical care. "
                 "Do NOT wait for an AI response. Please seek immediate professional medical assistance or go to the nearest hospital."

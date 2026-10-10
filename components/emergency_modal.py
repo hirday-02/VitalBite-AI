@@ -4,13 +4,16 @@ Displays high-visibility emergency red banner with Indian 112 emergency contact 
 """
 import streamlit as st
 from typing import Dict, Any
+from utils.icons import get_svg_icon
 
 def render_emergency_banner(eval_result: Dict[str, Any]):
     """Renders a prominent emergency alert box when high-risk symptoms are detected."""
+    emergency_svg = get_svg_icon("emergency", color="#DC2626", size=22)
+
     st.html(f"""
     <div class="emergency-overlay">
-        <div style="font-size: 1.3rem; font-weight: 800; color: #DC2626; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
-            🚨 POSSIBLE MEDICAL EMERGENCY DETECTED
+        <div style="font-size: 1.25rem; font-weight: 800; color: #DC2626; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
+            {emergency_svg} POSSIBLE MEDICAL EMERGENCY DETECTED
         </div>
         <p style="font-weight: 700; margin-bottom: 0.5rem; color: #991B1B; font-size: 0.95rem;">
             These symptoms may require immediate medical evaluation. Do NOT rely on VitalBite AI for emergency care.
@@ -24,7 +27,7 @@ def render_emergency_banner(eval_result: Dict[str, Any]):
             </ul>
         </div>
         <p style="font-size: 0.82rem; color: #991B1B; margin: 0; font-weight: 500;">
-            ⚠️ VitalBite AI is an educational assistant and cannot diagnose or treat medical emergencies.
+            <b>Medical Notice:</b> VitalBite AI is an educational assistant and cannot diagnose or treat medical emergencies.
         </p>
     </div>
     """)

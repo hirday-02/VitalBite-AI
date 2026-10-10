@@ -10,13 +10,19 @@ from services.ai_service import AIService, build_health_chat_prompt
 from services.auth_service import AuthService
 from services.safety_service import SafetyService
 from components.emergency_modal import render_emergency_banner
+from utils.icons import get_svg_icon
 
 def render_chat_tab(user_id: str):
     is_demo = AuthService.is_demo_mode()
+    chat_svg = get_svg_icon("chat", color="#0284C7", size=22)
+    sparkle_svg = get_svg_icon("sparkles", color="#7E22CE", size=16)
+    alert_svg = get_svg_icon("alert", color="#DC2626", size=16)
 
-    st.html("""
+    st.html(f"""
     <div style="margin-bottom: 1.5rem;">
-        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em;">💬 Personal Health AI</h2>
+        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em; display: flex; align-items: center; gap: 0.5rem;">
+            {chat_svg} Personal Health AI
+        </h2>
         <p style="color: #475569; font-size: 0.95rem; margin: 0; font-weight: 500;">Ask questions about health topics, wellness routines, or medical concepts in plain English.</p>
     </div>
     """)
@@ -26,9 +32,11 @@ def render_chat_tab(user_id: str):
     status = diag.get("status", "CONFIG_MISSING")
 
     if is_demo and status != "READY":
-        st.html("""
-        <div class="med-card" style="background: rgba(245, 243, 255, 0.9); border: 1px solid rgba(196, 181, 253, 0.8); padding: 0.85rem 1.15rem; margin-bottom: 1rem;">
-            <div style="font-weight: 800; color: #7E22CE; font-size: 0.92rem;">✨ Demo Health AI Active</div>
+        st.html(f"""
+        <div class="med-card" style="background: rgba(245, 243, 255, 0.95); border: 1px solid rgba(196, 181, 253, 0.8); padding: 0.85rem 1.15rem; margin-bottom: 1rem;">
+            <div style="font-weight: 800; color: #7E22CE; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                {sparkle_svg} Demo Health AI Active
+            </div>
             <div style="font-size: 0.82rem; color: #5B21B6; margin-top: 0.2rem;">
                 Exploring Health AI with evidence-based demonstration responses. In production, live Google Gemini reasoning is active when an API key is configured.
             </div>
@@ -44,7 +52,7 @@ def render_chat_tab(user_id: str):
 
         st.html(f"""
         <div class="error-card">
-            <div class="error-card-title">🔌 AI Connection Notice</div>
+            <div class="error-card-title">{alert_svg} AI Connection Notice</div>
             <div style="font-size: 0.88rem; line-height: 1.4;">
                 {msg}
             </div>
@@ -52,7 +60,7 @@ def render_chat_tab(user_id: str):
         """)
 
     profile = ProfileRepository.get_profile(user_id) or {}
-    user_name = profile.get("name") or ("Alex" if is_demo else "User")
+    user_name = profile.get("name") or ("Alex Rivera (Demo)" if is_demo else "User")
 
     # Conversation Selector Card
     sessions = ChatRepository.list_sessions(user_id)
@@ -64,14 +72,14 @@ def render_chat_tab(user_id: str):
             selected_session_id = st.selectbox(
                 "Active Conversation Thread",
                 options=list(session_options.keys()),
-                format_func=lambda sid: f"💬 {session_options[sid]}",
+                format_func=lambda sid: f"{session_options[sid]}",
                 label_visibility="collapsed"
             )
         else:
             new_sess = ChatRepository.get_or_create_session(user_id, title="New Conversation")
             selected_session_id = new_sess["id"]
     with col_s2:
-        if st.button("➕ New Chat", use_container_width=True):
+        if st.button("New Chat", use_container_width=True):
             new_sess = ChatRepository.get_or_create_session(user_id, title=f"Conversation {len(sessions) + 1}")
             st.session_state["active_chat_session_id"] = new_sess["id"]
             st.rerun()
@@ -115,7 +123,7 @@ def render_chat_tab(user_id: str):
         if safety_eval["is_emergency"]:
             render_emergency_banner(safety_eval)
             emergency_reply = (
-                "🚨 **SAFETY ESCALATION**: Your query contains symptoms that may indicate a serious medical emergency. "
+                "**SAFETY ESCALATION**: Your query contains symptoms that may indicate a serious medical emergency. "
                 f"Please call **{safety_eval['primary_number']}** or seek immediate emergency medical care now."
             )
             with st.chat_message("assistant"):
@@ -124,18 +132,19 @@ def render_chat_tab(user_id: str):
         else:
             with st.chat_message("assistant"):
                 with st.spinner("VitalBite AI is reviewing health context..."):
-                    prompt, sys_prompt = build_health_chat_prompt(user_input, profile)
+                    prompt, sys_prompt = build_health_chat_prompt(user_input, profile, is_demo=is_demo)
                     response_text = AIService.generate_response(
                         prompt=prompt,
                         system_instruction=sys_prompt,
                         is_demo=is_demo,
-                        user_name=user_name
+                        user_name=user_name,
+                        profile=profile
                     )
                     
                     if response_text.startswith("SERVICE_UNAVAILABLE:"):
                         st.html(f"""
                         <div class="error-card" style="margin: 0;">
-                            <div class="error-card-title">⚠️ AI Service Notice</div>
+                            <div class="error-card-title">{alert_svg} AI Service Notice</div>
                             <div style="font-size: 0.85rem;">{response_text.replace("SERVICE_UNAVAILABLE:", "").strip()}</div>
                         </div>
                         """)
@@ -143,7 +152,7 @@ def render_chat_tab(user_id: str):
                         st.markdown(response_text)
                         st.html("""
                         <div style="font-size: 0.76rem; color: #64748B; margin-top: 0.5rem;">
-                            ⚠️ VitalBite AI is in beta testing. Informational response only. Not a medical diagnosis or prescription.
+                            VitalBite AI is in beta testing. Informational response only. Not a medical diagnosis or prescription.
                         </div>
                         """)
                         ChatRepository.add_message(user_id, selected_session_id, "assistant", response_text)

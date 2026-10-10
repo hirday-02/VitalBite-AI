@@ -1,15 +1,20 @@
 """
 VitalBite AI — History & Downloadable Reports UI Component
-Categorized consultation history viewer with ReportLab PDF export and individual deletion actions matching Reference Screen 6.
+Categorized consultation history viewer with ReportLab PDF export and individual deletion actions.
 """
 import streamlit as st
 from database.repositories import ProfileRepository, ChatRepository, SymptomRepository, DietRepository
 from services.report_service import ReportService
+from utils.icons import get_svg_icon
 
 def render_history_tab(user_id: str):
-    st.html("""
+    history_svg = get_svg_icon("history", color="#0284C7", size=22)
+
+    st.html(f"""
     <div style="margin-bottom: 1.5rem;">
-        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em;">🕒 Consultation & Health History</h2>
+        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em; display: flex; align-items: center; gap: 0.5rem;">
+            {history_svg} Consultation & Health History
+        </h2>
         <p style="color: #475569; font-size: 0.95rem; margin: 0; font-weight: 500;">Review previous conversations, symptom assessments, diet plans, and download PDF summaries.</p>
     </div>
     """)
@@ -17,7 +22,7 @@ def render_history_tab(user_id: str):
     profile = ProfileRepository.get_profile(user_id) or {}
     user_name = profile.get("name") or "Alex Rivera"
 
-    h_tab1, h_tab2, h_tab3 = st.tabs(["⚡ Symptom Assessments", "🥗 Diet Plans", "💬 Chat Threads"])
+    h_tab1, h_tab2, h_tab3 = st.tabs(["Symptom Assessments", "Diet Plans", "Chat Threads"])
 
     # 1. SYMPTOM ASSESSMENTS HISTORY
     with h_tab1:
@@ -43,14 +48,14 @@ def render_history_tab(user_id: str):
                             profile=profile
                         )
                         st.download_button(
-                            "📥 Download PDF Report",
+                            "Download PDF Report",
                             data=pdf_bytes,
                             file_name=f"vitalbite_symptom_report_{item.get('id', '')[:8]}.pdf",
                             mime="application/pdf",
                             key=f"dl_sym_{idx}"
                         )
                     with col_del:
-                        if st.button("🗑️ Delete Entry", key=f"del_sym_{idx}"):
+                        if st.button("Delete Entry", key=f"del_sym_{idx}"):
                             SymptomRepository.delete_assessment(user_id, item["id"])
                             st.success("Entry deleted.")
                             st.rerun()
@@ -78,14 +83,14 @@ def render_history_tab(user_id: str):
                             profile=profile
                         )
                         st.download_button(
-                            "📥 Download PDF Report",
+                            "Download PDF Report",
                             data=pdf_bytes,
                             file_name=f"vitalbite_diet_plan_{item.get('id', '')[:8]}.pdf",
                             mime="application/pdf",
                             key=f"dl_diet_{idx}"
                         )
                     with col_del:
-                        if st.button("🗑️ Delete Plan", key=f"del_diet_{idx}"):
+                        if st.button("Delete Plan", key=f"del_diet_{idx}"):
                             DietRepository.delete_plan(user_id, item["id"])
                             st.success("Plan deleted.")
                             st.rerun()
@@ -103,7 +108,7 @@ def render_history_tab(user_id: str):
                     for m in msgs:
                         st.markdown(f"**{'User' if m.get('sender') == 'user' else 'VitalBite AI'}:** {m.get('message')}")
 
-                    if st.button("🗑️ Delete Chat Thread", key=f"del_sess_{idx}"):
+                    if st.button("Delete Chat Thread", key=f"del_sess_{idx}"):
                         ChatRepository.delete_session(user_id, sess["id"])
                         st.success("Thread deleted.")
                         st.rerun()

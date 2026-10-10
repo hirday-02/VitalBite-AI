@@ -12,19 +12,26 @@ from services.nutrition_service import NutritionService
 from services.diet_planner_service import DietPlannerService
 from services.report_service import ReportService
 from utils.custom_css import render_macro_progress_bar_html
+from utils.icons import get_svg_icon
 
 def render_diet_tab(user_id: str):
-    st.html("""
+    nutrition_svg = get_svg_icon("nutrition", color="#059669", size=22)
+    profile_svg = get_svg_icon("profile", color="#0284C7", size=18)
+    alert_svg = get_svg_icon("alert", color="#DC2626", size=16)
+
+    st.html(f"""
     <div style="margin-bottom: 1.5rem;">
-        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em;">🥗 Personalized Diet Planner</h2>
+        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em; display: flex; align-items: center; gap: 0.5rem;">
+            {nutrition_svg} Personalized Diet Planner
+        </h2>
         <p style="color: #475569; font-size: 0.95rem; margin: 0; font-weight: 500;">Build a nutrition plan around your goals, preferences, and verified food data from ICMR-NIN and USDA.</p>
     </div>
     """)
 
     sub_tab1, sub_tab2, sub_tab3 = st.tabs([
-        "📅 7-Day Interactive Diet Planner",
-        "🔍 Database Food Lookup",
-        "🔄 Food Substitutions"
+        "7-Day Interactive Diet Planner",
+        "Database Food Lookup",
+        "Food Substitutions"
     ])
 
     # =========================================================================
@@ -41,15 +48,15 @@ def render_diet_tab(user_id: str):
 
         # 1. Profile Completeness Gate
         if not height_cm or not weight_kg or not age:
-            st.html("""
+            st.html(f"""
             <div class="med-card" style="border-left: 4px solid #0284C7; margin-bottom: 1rem;">
-                <div class="med-card-title">👤 Complete Profile Required for Personalized Planning</div>
+                <div class="med-card-title">{profile_svg} Complete Profile Required for Personalized Planning</div>
                 <p style="color: #475569; font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.5rem;">
                     To calculate your personal metabolic expenditure (BMR & TDEE) and establish goal-aligned calorie and macronutrient targets, VitalBite AI requires your age, height, and weight.
                 </p>
             </div>
             """)
-            if st.button("👉 Complete Health Profile", key="btn_goto_profile"):
+            if st.button("Complete Health Profile", key="btn_goto_profile"):
                 st.session_state["nav_selection"] = "Profile"
                 st.rerun()
             return
@@ -59,8 +66,8 @@ def render_diet_tab(user_id: str):
         if safety_check["has_warning"]:
             st.html(f"""
             <div class="emergency-overlay" style="border-color: #F59E0B; background: rgba(254, 243, 199, 0.95); margin-bottom: 1rem;">
-                <div style="font-size: 1.05rem; font-weight: 800; color: #B45309; margin-bottom: 0.35rem;">
-                    ⚠️ Clinical Supervision Recommended
+                <div style="font-size: 1.05rem; font-weight: 800; color: #B45309; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+                    {alert_svg} Clinical Supervision Recommended
                 </div>
                 <div style="font-size: 0.88rem; color: #92400E; line-height: 1.5;">
                     {safety_check['warning_text']}
@@ -74,11 +81,11 @@ def render_diet_tab(user_id: str):
         st.html(f"""
         <div class="med-card" style="padding: 0.85rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.88rem; color: #475569; font-weight: 600;">
-                <span>👤 <b>{profile.get('name', 'User')}</b> ({age}y, {gender})</span>
-                <span>📏 <b>{height_cm} cm</b></span>
-                <span>⚖️ <b>{weight_kg} kg</b></span>
-                <span>📊 BMI: <b style="color: #0284C7;">{bmi_str}</b></span>
-                <span>🚫 Allergies: <b style="color: #DC2626;">{allergies}</b></span>
+                <span><b>{profile.get('name', 'User')}</b> ({age}y, {gender})</span>
+                <span>Height: <b>{height_cm} cm</b></span>
+                <span>Weight: <b>{weight_kg} kg</b></span>
+                <span>BMI: <b style="color: #0284C7;">{bmi_str}</b></span>
+                <span>Allergies: <b style="color: #DC2626;">{allergies}</b></span>
             </div>
         </div>
         """)
@@ -87,8 +94,8 @@ def render_diet_tab(user_id: str):
         col_left, col_right = st.columns([1.15, 1.35])
 
         with col_left:
-            st.html("<h3 style='color: #0F172A; font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.015em;'>🏋️ 1. Nutrition Goals</h3>")
-            
+            st.html("<h3 style='color: #0F172A; font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.015em;'>1. Nutrition Goals</h3>")
+
             fitness_goals = [
                 "Maintain Current Physique",
                 "Fat Loss / Weight Loss",
@@ -144,21 +151,21 @@ def render_diet_tab(user_id: str):
             <div class="med-card" style="margin-top: 0.85rem; padding: 1rem 1.15rem;">
                 <div class="med-card-subtitle">CALCULATED DAILY TARGET ESTIMATES</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.5rem; font-size: 0.88rem;">
-                    <div>🔥 Target Calories: <b style="color: #0284C7; font-size: 1rem;">{int(targets['target_calories'])} kcal</b></div>
-                    <div>💪 Protein: <b style="color: #0284C7;">{targets['protein_g']} g</b></div>
-                    <div>🌾 Carbs: <b style="color: #0F172A;">{targets['carbs_g']} g</b></div>
-                    <div>🥑 Fat: <b style="color: #0F172A;">{targets['fat_g']} g</b></div>
-                    <div>🥗 Fiber Target: <b style="color: #059669;">{targets['fiber_g']} g</b></div>
-                    <div>⚡ Est. TDEE: <b style="color: #64748B;">{int(targets['tdee'])} kcal</b></div>
+                    <div>Target Calories: <b style="color: #0284C7; font-size: 1rem;">{int(targets['target_calories'])} kcal</b></div>
+                    <div>Protein: <b style="color: #0284C7;">{targets['protein_g']} g</b></div>
+                    <div>Carbs: <b style="color: #0F172A;">{targets['carbs_g']} g</b></div>
+                    <div>Fat: <b style="color: #0F172A;">{targets['fat_g']} g</b></div>
+                    <div>Fiber Target: <b style="color: #059669;">{targets['fiber_g']} g</b></div>
+                    <div>Est. TDEE: <b style="color: #64748B;">{int(targets['tdee'])} kcal</b></div>
                 </div>
                 <div style="font-size: 0.74rem; color: #64748B; margin-top: 0.65rem;">
-                    📌 Note: Calorie and macro targets are educational fitness estimates, not medical prescriptions.
+                    Note: Calorie and macro targets are educational fitness estimates, not medical prescriptions.
                 </div>
             </div>
             """)
 
-            # Dedicated Protein Powder Supplement Box matching Reference UI
-            st.html("<h3 style='color: #0F172A; font-size: 1.1rem; font-weight: 800; margin-top: 1.15rem; margin-bottom: 0.45rem;'>💪 Protein Powder (Optional Supplement)</h3>")
+            # Dedicated Protein Powder Supplement Box
+            st.html("<h3 style='color: #0F172A; font-size: 1.1rem; font-weight: 800; margin-top: 1.15rem; margin-bottom: 0.45rem;'>Protein Powder (Optional Supplement)</h3>")
             enable_protein_powder = st.checkbox("Include Protein Powder in Diet Plan", value=False, key="chk_enable_protein_powder")
 
             powder_config = {"enabled": enable_protein_powder}
@@ -171,7 +178,7 @@ def render_diet_tab(user_id: str):
                     "Custom Protein Powder (Enter Nutrition Label Data)"
                 ]
                 chosen_powder_type = st.selectbox("Selected Selection", powder_choices, key="sel_powder_type")
-                
+
                 powder_serving_opts = [
                     "0.5 serving (Half Scoop)",
                     "1.0 serving (1 Scoop — Standard)",
@@ -202,7 +209,7 @@ def render_diet_tab(user_id: str):
                         c_prot = st.number_input("Protein (g)", min_value=1.0, max_value=50.0, value=24.0, step=1.0, key="custom_powder_prot")
                         c_carbs = st.number_input("Carbs (g)", min_value=0.0, max_value=50.0, value=2.0, step=0.5, key="custom_powder_carbs")
                         c_fat = st.number_input("Fat (g)", min_value=0.0, max_value=20.0, value=1.0, step=0.5, key="custom_powder_fat")
-                    
+
                     custom_nut = {
                         "brand_name": c_brand.strip(),
                         "serving_size_label": c_serving.strip(),
@@ -225,12 +232,12 @@ def render_diet_tab(user_id: str):
                 if powder_preview:
                     st.html(f"""
                     <div style="background: rgba(240, 249, 255, 0.95); border: 1.5px solid rgba(186, 230, 253, 0.8); border-radius: 12px; padding: 0.75rem 1rem; margin-top: 0.5rem; font-size: 0.85rem;">
-                        <div style="font-weight: 700; color: #0284C7;">⚡ Selected Supplement Contribution ({servings_float} scoop):</div>
+                        <div style="font-weight: 700; color: #0284C7;">Selected Supplement Contribution ({servings_float} scoop):</div>
                         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.35rem; color: #1E293B; font-weight: 600;">
-                            <span>🔥 Calories: <b>{powder_preview['calories_kcal']} kcal</b></span>
-                            <span>💪 Protein: <b style="color: #059669;">{powder_preview['protein_g']} g</b></span>
-                            <span>🌾 Carbs: <b>{powder_preview['carbs_g']} g</b></span>
-                            <span>🥑 Fat: <b>{powder_preview['fat_g']} g</b></span>
+                            <span>Calories: <b>{powder_preview['calories_kcal']} kcal</b></span>
+                            <span>Protein: <b style="color: #059669;">{powder_preview['protein_g']} g</b></span>
+                            <span>Carbs: <b>{powder_preview['carbs_g']} g</b></span>
+                            <span>Fat: <b>{powder_preview['fat_g']} g</b></span>
                         </div>
                     </div>
                     """)
@@ -249,14 +256,14 @@ def render_diet_tab(user_id: str):
 
             col_btn1, col_btn2, col_count = st.columns([1, 1, 1.5])
             with col_btn1:
-                if st.button("✓ Select All", use_container_width=True, key="btn_select_all_foods"):
+                if st.button("Select All", use_container_width=True, key="btn_select_all_foods"):
                     st.session_state[state_key] = set(all_compat_ids)
                     for fid in all_compat_ids:
                         st.session_state[f"chk_food_{user_id}_{fid}"] = True
                     st.rerun()
 
             with col_btn2:
-                if st.button("✕ Clear All", use_container_width=True, key="btn_clear_all_foods"):
+                if st.button("Clear All", use_container_width=True, key="btn_clear_all_foods"):
                     st.session_state[state_key] = set()
                     for fid in all_compat_ids:
                         st.session_state[f"chk_food_{user_id}_{fid}"] = False
@@ -274,22 +281,22 @@ def render_diet_tab(user_id: str):
             for cat_name, food_list in categories.items():
                 if not food_list:
                     continue
-                
+
                 cat_selected_count = sum(1 for f in food_list if f["id"] in st.session_state[state_key])
                 expander_label = f"{cat_name} ({cat_selected_count}/{len(food_list)} selected)"
-                
+
                 with st.expander(expander_label, expanded=(cat_selected_count > 0)):
                     cols = st.columns(2)
                     for idx, food in enumerate(food_list):
                         fid = food["id"]
                         chk_key = f"chk_food_{user_id}_{fid}"
                         is_checked = fid in st.session_state[state_key]
-                        
+
                         with cols[idx % 2]:
                             cal_display = f"{int(food['calories_kcal'])} kcal"
                             prot_display = f"{food['protein_g']}g P"
                             label_str = f"{food['name']} ({cal_display}, {prot_display})"
-                            
+
                             val = st.checkbox(
                                 label_str,
                                 value=is_checked,
@@ -302,11 +309,11 @@ def render_diet_tab(user_id: str):
 
             # Generate Plan Trigger Button
             st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
-            gen_plan_btn = st.button("🚀 Generate 7-Day Personalized Meal Plan", use_container_width=True, key="btn_generate_7day_plan")
+            gen_plan_btn = st.button("Generate 7-Day Personalized Meal Plan", use_container_width=True, key="btn_generate_7day_plan")
 
             if gen_plan_btn:
                 chosen_food_ids = list(st.session_state[state_key])
-                
+
                 with st.spinner("VitalBite AI is constructing and optimizing your 7-day meal plan..."):
                     generated_plan = DietPlannerService.generate_7day_plan(
                         profile=profile,
@@ -318,11 +325,11 @@ def render_diet_tab(user_id: str):
                         training_type=selected_type,
                         protein_powder_config=powder_config
                     )
-                
+
                 st.session_state[f"active_diet_plan_{user_id}"] = generated_plan
 
         # =========================================================================
-        # 7-DAY MEAL PLAN DISPLAY SECTION matching Reference Screen 4
+        # 7-DAY MEAL PLAN DISPLAY SECTION
         # =========================================================================
         plan_data = st.session_state.get(f"active_diet_plan_{user_id}")
 
@@ -330,7 +337,7 @@ def render_diet_tab(user_id: str):
             if not plan_data.get("success"):
                 st.html(f"""
                 <div class="error-card" style="margin-top: 1.5rem;">
-                    <div class="error-card-title">⚠️ Meal Plan Notice: {plan_data.get('error_code')}</div>
+                    <div class="error-card-title">{alert_svg} Meal Plan Notice: {plan_data.get('error_code')}</div>
                     <div style="font-size: 0.9rem; line-height: 1.5;">{plan_data.get('message')}</div>
                 </div>
                 """)
@@ -358,13 +365,13 @@ def render_diet_tab(user_id: str):
                                 <div>
                                     <div style="font-size: 1.15rem; font-weight: 800; color: #0F172A;">{day['day_name']} Overview</div>
                                     <div style="font-size: 0.84rem; color: #64748B; margin-top: 0.2rem;">
-                                        🔥 Calories: <b>{summary['calories']} kcal</b> ({summary['calories_pct']}% of target) | 
-                                        💪 Protein: <b style="color: #0284C7;">{summary['protein_g']}g</b> ({summary['protein_pct']}% of target)
+                                        Calories: <b>{summary['calories']} kcal</b> ({summary['calories_pct']}% of target) |
+                                        Protein: <b style="color: #0284C7;">{summary['protein_g']}g</b> ({summary['protein_pct']}% of target)
                                     </div>
                                 </div>
                                 <div>
-                                    <span style="background: {'rgba(16, 185, 129, 0.12)' if summary['target_reached'] else 'rgba(245, 158, 11, 0.12)'}; color: {'#059669' if summary['target_reached'] else '#D97706'}; font-weight: 800; font-size: 0.82rem; padding: 0.35rem 0.85rem; border-radius: 20px; border: 1px solid {'rgba(16, 185, 129, 0.3)' if summary['target_reached'] else 'rgba(245, 158, 11, 0.3)'};">
-                                        {'✓ Target Reached (≥90%)' if summary['target_reached'] else '⚡ Optimized Plan'}
+                                    <span style="background: {'rgba(13, 148, 136, 0.12)' if summary['target_reached'] else 'rgba(217, 119, 6, 0.12)'}; color: {'#0D9488' if summary['target_reached'] else '#D97706'}; font-weight: 800; font-size: 0.82rem; padding: 0.35rem 0.85rem; border-radius: 20px; border: 1px solid {'rgba(13, 148, 136, 0.3)' if summary['target_reached'] else 'rgba(217, 119, 6, 0.3)'};">
+                                        {'Target Reached (≥90%)' if summary['target_reached'] else 'Optimized Plan'}
                                     </span>
                                 </div>
                             </div>
@@ -376,7 +383,7 @@ def render_diet_tab(user_id: str):
                             with st.container():
                                 item_names = " + ".join([it["name"] for it in meal["items"]])
                                 item_details = ", ".join([f"{it['name']} ({it.get('serving_size', '1 serving')})" for it in meal["items"]])
-                                
+
                                 st.html(f"""
                                 <div class="meal-card">
                                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
@@ -391,8 +398,8 @@ def render_diet_tab(user_id: str):
                                                 {meal['total_protein']}g P • {meal['total_carbs']}g C • {meal['total_fat']}g F
                                             </div>
                                             <div style="margin-top: 0.35rem;">
-                                                <span style="background: rgba(16, 185, 129, 0.1); color: #059669; font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.25);">
-                                                    ✓ Verified Source
+                                                <span style="background: rgba(13, 148, 136, 0.1); color: #0D9488; font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 6px; border: 1px solid rgba(13, 148, 136, 0.25);">
+                                                    Verified Source
                                                 </span>
                                             </div>
                                         </div>
@@ -423,7 +430,7 @@ def render_diet_tab(user_id: str):
                 col_save, col_pdf = st.columns(2)
 
                 with col_save:
-                    if st.button("💾 Save 7-Day Plan to My Account", use_container_width=True, key="btn_save_diet_plan"):
+                    if st.button("Save 7-Day Plan to My Account", use_container_width=True, key="btn_save_diet_plan"):
                         plan_summary_text = (
                             f"Goal: {plan_data['goal']} ({plan_data['dietary_preference']})\n"
                             f"Daily Calories: ~{plan_data['days'][0]['summary']['calories']} kcal | "
@@ -434,7 +441,7 @@ def render_diet_tab(user_id: str):
                             goal=plan_data["goal"],
                             diet_type=plan_data["dietary_preference"],
                             plan_text=plan_summary_text,
-                            plan_obj=plan_data
+                            structured_data=plan_data
                         )
                         st.success("Plan saved to your Consultation & Health History!")
 
@@ -447,7 +454,7 @@ def render_diet_tab(user_id: str):
                         profile=profile
                     )
                     st.download_button(
-                        "📥 Export 7-Day Plan (PDF)",
+                        "Export 7-Day Plan (PDF)",
                         data=pdf_report_bytes,
                         file_name=f"vitalbite_7day_diet_plan_{user_id[:8]}.pdf",
                         mime="application/pdf",
@@ -461,7 +468,7 @@ def render_diet_tab(user_id: str):
     with sub_tab2:
         st.html("""
         <div style="margin-bottom: 1rem;">
-            <h3 style="color: #0F172A; font-weight: 800; font-size: 1.2rem; margin-bottom: 0.25rem;">🔍 Verified Database Food Lookup</h3>
+            <h3 style="color: #0F172A; font-weight: 800; font-size: 1.2rem; margin-bottom: 0.25rem;">Verified Database Food Lookup</h3>
             <p style="color: #64748B; font-size: 0.88rem; margin: 0;">Search verified ICMR-NIN IFCT 2017 & USDA food nutrition records.</p>
         </div>
         """)
@@ -473,8 +480,8 @@ def render_diet_tab(user_id: str):
                 st.html(f"""
                 <div class="med-card" style="margin-top: 1rem; border-left: 4px solid #0284C7;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                        <div style="font-size: 1.25rem; font-weight: 800; color: #0F172A;">{food_info['name']}</div>
-                        <span style="background: rgba(16, 185, 129, 0.12); color: #059669; font-size: 0.76rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 20px;">
+                        <div style="font-size: 1.25rem; font-weight: 800; color: #0F172A;">{food_info.get('name') or food_info.get('food_name') or food_info.get('item') or 'Food item'}</div>
+                        <span style="background: rgba(13, 148, 136, 0.12); color: #0D9488; font-size: 0.76rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 20px;">
                             {food_info.get('source', 'ICMR-NIN IFCT')}
                         </span>
                     </div>
@@ -508,7 +515,7 @@ def render_diet_tab(user_id: str):
     with sub_tab3:
         st.html("""
         <div style="margin-bottom: 1rem;">
-            <h3 style="color: #0F172A; font-weight: 800; font-size: 1.2rem; margin-bottom: 0.25rem;">🔄 Smart Food Substitutions</h3>
+            <h3 style="color: #0F172A; font-weight: 800; font-size: 1.2rem; margin-bottom: 0.25rem;">Smart Food Substitutions</h3>
             <p style="color: #64748B; font-size: 0.88rem; margin: 0;">Discover equivalent nutritional swaps from verified food databases.</p>
         </div>
         """)
@@ -527,7 +534,7 @@ def render_diet_tab(user_id: str):
                     st.html(f"""
                     <div class="med-card" style="padding: 0.85rem 1.15rem; margin-bottom: 0.65rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-weight: 700; color: #0284C7; font-size: 0.95rem;">🔄 {s['name']}</span>
+                            <span style="font-weight: 700; color: #0284C7; font-size: 0.95rem;">{s['name']}</span>
                             <span style="font-size: 0.82rem; color: #64748B;">{s['calories_kcal']} kcal • {s['protein_g']}g Protein</span>
                         </div>
                     </div>

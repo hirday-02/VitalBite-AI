@@ -59,9 +59,9 @@ class AuthService:
         """
         demo_user = {
             "id": DEMO_USER_ID,
-            "email": "alex.rivera@example.com",
+            "email": "Harsh.Singh@example.com",
             "user_metadata": {
-                "full_name": "Alex Rivera",
+                "full_name": "Harsh Singh",
                 "is_demo": True
             }
         }
@@ -112,7 +112,7 @@ class AuthService:
 
         client = SupabaseManager.get_client()
         if not client:
-            return False, "Supabase authentication is not configured on this server. Please use '✨ Explore Demo' or configure SUPABASE_URL and SUPABASE_ANON_KEY in Streamlit secrets."
+            return False, "Supabase authentication is not configured on this server. Please use 'Explore Demo' or configure SUPABASE_URL and SUPABASE_ANON_KEY in Streamlit secrets."
 
         try:
             res = client.auth.sign_in_with_password({"email": email, "password": password})
@@ -147,7 +147,7 @@ class AuthService:
 
         client = SupabaseManager.get_client()
         if not client:
-            return False, "Supabase authentication is not configured on this server. Please use '✨ Explore Demo' or configure SUPABASE_URL and SUPABASE_ANON_KEY in Streamlit secrets."
+            return False, "Supabase authentication is not configured on this server. Please use 'Explore Demo' or configure SUPABASE_URL and SUPABASE_ANON_KEY in Streamlit secrets."
 
         try:
             res = client.auth.sign_up({
@@ -179,7 +179,7 @@ class AuthService:
 
         client = SupabaseManager.get_client()
         if not client:
-            return False, "Supabase authentication is not configured on this server. Please use '✨ Explore Demo' or configure SUPABASE_URL and SUPABASE_ANON_KEY in Streamlit secrets."
+            return False, "Supabase authentication is not configured on this server. Please use 'Explore Demo' or configure SUPABASE_URL and SUPABASE_ANON_KEY in Streamlit secrets."
 
         try:
             client.auth.reset_password_for_email(email)

@@ -6,11 +6,17 @@ import streamlit as st
 from database.repositories import ProfileRepository
 from services.health_service import HealthService
 from utils.custom_css import render_bmi_gauge_html
+from utils.icons import get_svg_icon
 
 def render_insights_tab(user_id: str):
-    st.html("""
+    insights_svg = get_svg_icon("insights", color="#0284C7", size=22)
+    alert_svg = get_svg_icon("alert", color="#DC2626", size=16)
+
+    st.html(f"""
     <div style="margin-bottom: 1.5rem;">
-        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em;">📈 Health Insights</h2>
+        <h2 style="color: #0F172A; font-weight: 800; font-size: 1.95rem; margin-bottom: 0.25rem; letter-spacing: -0.025em; display: flex; align-items: center; gap: 0.5rem;">
+            {insights_svg} Health Insights
+        </h2>
         <p style="color: #475569; font-size: 0.95rem; margin: 0; font-weight: 500;">Understand your health and nutrition trends derived objectively from your verified profile.</p>
     </div>
     """)
@@ -23,10 +29,10 @@ def render_insights_tab(user_id: str):
     gender = profile.get("gender") or "Male"
 
     if not height_cm or not weight_kg:
-        st.info("⚠️ Height and Weight are required in your Profile to compute metabolic & BMI insights.")
+        st.info("Height and Weight are required in your Profile to compute metabolic & BMI insights.")
         return
 
-    # Metric Cards Grid matching Reference Screen 5
+    # Metric Cards Grid
     col1, col2, col3 = st.columns(3)
 
     bmi_info = HealthService.calculate_bmi(height_cm, weight_kg)
@@ -75,14 +81,14 @@ def render_insights_tab(user_id: str):
     # Detailed Metric Explanations Card
     st.html("""
     <div class="med-card" style="margin-top: 1.25rem;">
-        <div class="med-card-title">💡 Metric Definitions & Evidence Basis</div>
+        <div class="med-card-title">Metric Definitions & Evidence Basis</div>
         <ul style="color: #475569; font-size: 0.9rem; line-height: 1.6; margin-top: 0.4rem; padding-left: 1.2rem;">
             <li><b style="color: #0F172A;">Body Mass Index (BMI):</b> Standard international reference metric calculated as weight (kg) / height (m²). Used strictly as a general screening reference.</li>
             <li><b style="color: #0F172A;">Basal Metabolic Rate (BMR):</b> Estimated daily calories expended at rest for essential biological maintenance (Mifflin-St Jeor equation).</li>
             <li><b style="color: #0F172A;">Total Daily Energy Expenditure (TDEE):</b> Estimated total daily calorie burn factoring in baseline metabolism and moderate activity.</li>
         </ul>
         <div class="disclaimer-box" style="margin-top: 1rem;">
-            📌 <b>Data-Grounded Principle:</b> VitalBite AI strictly displays metrics based on user-provided height, weight, and age. We never invent blood pressure, pulse, or blood glucose numbers.
+            <b>Data-Grounded Principle:</b> VitalBite AI strictly displays metrics based on user-provided height, weight, and age. We never invent blood pressure, pulse, or blood glucose numbers.
         </div>
     </div>
     """)

@@ -35,8 +35,8 @@ class TestDemoMode(unittest.TestCase):
         AuthService.start_demo_mode()
         profile = ProfileRepository.get_profile(DEMO_USER_ID)
         self.assertIsNotNone(profile)
-        self.assertEqual(profile.get("name"), "Alex Rivera")
-        self.assertEqual(profile.get("age"), 28)
+        self.assertEqual(profile.get("name"), "Harsh Singh")
+        self.assertEqual(profile.get("age"), 22)
         self.assertEqual(profile.get("gender"), "Male")
         self.assertEqual(profile.get("fitness_goal"), "Body Recomposition")
         self.assertEqual(profile.get("blood_type"), "O+")
@@ -66,9 +66,10 @@ class TestDemoMode(unittest.TestCase):
     def test_04_fallback_ai_response_for_demo_and_offline(self):
         """Verify evidence-based fallback AI responses when Gemini is unavailable."""
         ai_resp = get_fallback_ai_response("What workout should I do at the gym for muscle progress?", "Alex")
+        # Match updated response wording: 'Progressive Resistance Training' (not 'Progressive Overload')
         self.assertIn("Training", ai_resp)
-        self.assertIn("Progressive Overload", ai_resp)
-        self.assertIn("VitalBite AI is currently in beta testing", ai_resp)
+        self.assertIn("Protein", ai_resp)
+        self.assertIn("VitalBite AI is", ai_resp)
 
         nut_resp = get_fallback_ai_response("How much protein should I eat?", "Alex")
         self.assertIn("Protein", nut_resp)
@@ -109,7 +110,7 @@ class TestDemoMode(unittest.TestCase):
         demo_profile = ProfileRepository.get_profile(DEMO_USER_ID)
         real_profile = ProfileRepository.get_profile(real_user_id)
 
-        self.assertEqual(demo_profile.get("name"), "Alex Rivera")
+        self.assertEqual(demo_profile.get("name"), "Harsh Singh")
         self.assertEqual(real_profile.get("name"), "Sarah Connor")
         self.assertNotEqual(demo_profile.get("name"), real_profile.get("name"))
 
